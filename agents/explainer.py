@@ -1,8 +1,14 @@
+from openai import OpenAI
+from dotenv import load_dotenv
+
+load_dotenv()
+client = OpenAI()
+
 def find_topics(chunks, query):
     # Combine all the retrieved chunks
     context = "\n\n".join(chunks)
     
-    prompt = f""""
+    prompt = f"""
     You are an AI assistant helping analyze research papers.
     
     Based on the following content:
@@ -14,6 +20,11 @@ def find_topics(chunks, query):
     Return ONLY a short bullet point list of topics.
     """
     
-    response = ollama_call()
+    response = client.chat.completions.create(
+        model="gpt-4o-mini",
+        messages=[
+            {"role": "user", "content": prompt}
+        ]
+    )
     
-    return response
+    return response.choices[0].message.content.strip()

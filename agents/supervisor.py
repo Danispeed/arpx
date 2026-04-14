@@ -1,4 +1,5 @@
 from agents.retriever import index_paper, retrieve_chunks
+from agents.explainer import find_topics
 
 def analyze_paper(paper):
     # Index paper (should only happen once)
