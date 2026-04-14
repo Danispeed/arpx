@@ -24,6 +24,10 @@ def create_schema():
                 wvc.config.Property(
                     name="text",
                     data_type=wvc.config.DataType.TEXT
+                ),
+                wvc.config.Property(
+                    name="source",
+                    data_type=wvc.config.DataType.TEXT
                 )
             ]
         )
@@ -36,7 +40,7 @@ def create_schema():
 #
 # vector:
 #   [0.12, -0.44, 0.91, ...]
-def store_chunks(chunks, embeddings):
+def store_chunks(chunks, embeddings, source):
     # Iterate through the chunks with its corresponding vector
     # We assume that the corresponding chunks and vector are stored at the same index
     # e.g., chunks[0] belongs to embeddings[0]
@@ -45,22 +49,34 @@ def store_chunks(chunks, embeddings):
         # Create a data object corresponding to the schema created (atm only contains one attribute "text")
         collection.data.insert(
             properties={
-                "text": chunk
+                "text": chunk,
+                "source": source
             },
             vector=vector.tolist() # Convert from numpy array to a plain list
         )
 
 # This function
 # will now retrieve the top 5 chunks based on the query, this parameter can be changed
-def query_chunks(query_embedding, top_k=5):
+def query_chunks(query_embedding, top_k_main=5, top_k_ref=2):
     collection = client.collections.get("PaperChunk")
     
-    response = collection.query.near_vector(
+    # Chunks from the main paper (the paper that was uploaded by the user)
+    main_results = collection.query.near_vector(
         near_vector=query_embedding.tolist(),   # Similarity search
-        limit=top_k     # limit results, only return top_k most relevant chunks
+        limit=top_k_main,     # limit results, only return top_k most relevant chunks
+        filters=wvc.query.Filter.by_property("source").equal("main")
     )
     
-    return [obj.properties["text"] for obj in response.objects]
+    reference_results = collection.query.near_vector(
+        near_vector=query_embedding.tolist(),
+        limit=top_k_ref,
+        filters=wvc.query.Filter.by_property("source").equal("reference")
+    )
+    
+    # Combine results
+    combined = main_results.objects + reference_results.objects
+    
+    return [obj.properties["text"] for obj in combined]
     
 
 # Weaviate returns:
@@ -74,5 +90,10 @@ def query_chunks(query_embedding, top_k=5):
 #     }
 #   }
 # }
+
+# Clear database
+def clear():
+    # Cleares eveything in the database
+    client.collections.delete("PaperChunk")
 
 

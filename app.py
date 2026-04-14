@@ -1,5 +1,5 @@
 import streamlit as st
-from agents.supervisor import analyze_paper
+from agents.supervisor import analyze_paper, explain_paper
 
 st.title("ARPX - Adaptive Research Paper Explainer")
 st.write("Upload a research paper and get a tailored explanation!")
@@ -38,3 +38,6 @@ if st.session_state.analyzed:
         max_value=10,
         value=5
     )
+    
+    if st.button("Explain Paper"):
+        explanation = explain_paper(level)
