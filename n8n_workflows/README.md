@@ -39,6 +39,22 @@ For n8n 2.x, production webhooks require both actions:
 1. Click **Publish** in the workflow editor.
 2. Toggle the workflow to **Active**.
 
+## Prompt workflow
+
+Prompt source of truth lives in [`prompts.yaml`](prompts.yaml). Do not manually edit prompt strings in [`arpx-mvp.json`](arpx-mvp.json) unless debugging.
+
+1. Edit prompt content in `n8n_workflows/prompts.yaml`.
+2. Compile prompts into the workflow JSON:
+
+```bash
+python3 scripts/build_workflow.py
+```
+
+3. Import the regenerated `n8n_workflows/arpx-mvp.json` into n8n.
+4. Publish + activate the workflow again.
+
+The compiler updates only prompt text fields in `ExplainerAgent` and `MermaidAgent`.
+
 ## API Contract (Frontend -> n8n)
 
 - **Method:** `POST`
@@ -93,7 +109,7 @@ Expected response includes:
 ## Notes
 
 - Azure endpoint used by both nodes: `https://gpt-course.cognitiveservices.azure.com`.
-- Explainer deployment/model: `gpt-5.1`.
-- Mermaid deployment/model: `o3-mini`.
+- Explainer deployment/model: `gpt-5-chat`.
+- Mermaid deployment/model: `gpt-4.1-mini`.
 - Keep API keys only in n8n credentials, never in git.
 - If node version warnings appear on import, re-save the workflow in n8n and export again.

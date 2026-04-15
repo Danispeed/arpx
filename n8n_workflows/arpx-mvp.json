@@ -163,7 +163,7 @@
         },
         "sendBody": true,
         "specifyBody": "json",
-        "jsonBody": "={{ { messages: [ { role: \"system\", content: \"You are the Explainer agent. Output ONLY plain explanation text (no Mermaid). Adapt depth and vocabulary to the user's background level 1 (novice) through 10 (expert). Be accurate and concise.\" }, { role: \"user\", content: \"Paper excerpt:\\n\" + $json.paper_excerpt + \"\\n\\nTopics (JSON): \" + $json.topics + \"\\nUser level (1-10): \" + $json.level + \"\\n\\nWrite the explanation for this level.\" } ], temperature: 0.5, max_completion_tokens: 1200 } }}",
+        "jsonBody": "={{ { messages: [ { role: \"system\", content: \"You are the Explainer agent.\\nProduce an accurate explanation adapted to the user's level.\\n\\nShared constraints:\\n- Output plain text only.\\n- Do not use markdown code fences.\\n- Use ASCII-safe wording and labels.\\n- Be concise and avoid unnecessary repetition.\\n\\nLevel adaptation policy:\\n- Levels 1-3 (beginner): Use simple language, define terms, and explain assumptions explicitly.\\n- Levels 4-7 (intermediate): Balance intuition with technical detail and include key mechanisms.\\n- Levels 8-10 (advanced): Use compact technical language and emphasize trade-offs and limitations.\\nAlways use the provided user level to choose depth and vocabulary.\" }, { role: \"user\", content: \"Paper excerpt:\\n\" + $json.paper_excerpt + \"\\n\\nTopics (JSON): \" + $json.topics + \"\\nUser level (1-10): \" + $json.level + \"\\n\\nWrite the explanation for this level.\" } ], temperature: 0.5, max_completion_tokens: 1200 } }}",
         "options": {}
       },
       "id": "9d043641-e009-44e1-b3c6-34d8aebb80ae",
@@ -198,7 +198,7 @@
         },
         "sendBody": true,
         "specifyBody": "json",
-        "jsonBody": "={{ { messages: [ { role: \"system\", content: \"You are the Mermaid agent. Read the research text and output ONLY valid Mermaid.js diagram code (a single diagram). Do not wrap in markdown fences. Prefer flowchart TD or sequenceDiagram when appropriate; keep labels short and ASCII-safe.\" }, { role: \"user\", content: \"Paper excerpt:\\n\" + $json.paper_excerpt + \"\\n\\nTopics (JSON): \" + $json.topics + \"\\nProduce one Mermaid diagram of the main structure or logic.\" } ], temperature: 0.3, max_completion_tokens: 900 } }}",
+        "jsonBody": "={{ { messages: [ { role: \"system\", content: \"You are the Mermaid agent.\\nRead the research excerpt and output one valid Mermaid diagram.\\n\\nShared constraints:\\n- Output plain text only.\\n- Do not use markdown code fences.\\n- Use ASCII-safe wording and labels.\\n- Be concise and avoid unnecessary repetition.\" }, { role: \"user\", content: \"Paper excerpt:\\n\" + $json.paper_excerpt + \"\\n\\nTopics (JSON): \" + $json.topics + \"\\nProduce one Mermaid diagram of the main structure or logic.\" } ], temperature: 0.3, max_completion_tokens: 900 } }}",
         "options": {}
       },
       "id": "21b23dec-878a-48e6-855c-4f341b08f640",
