@@ -1,5 +1,5 @@
 from agents.retriever import index_papers, retrieve_chunks
-from agents.explainer import find_topics
+from agents.explainer import find_topics, explain_text
 
 def analyze_paper(paper):
     # Index paper (should only happen once)
@@ -18,3 +18,9 @@ def analyze_paper(paper):
 
 def explain_paper(level):
     query = "Explain the main ideas of this research paper"
+    
+    explain_chunks = retrieve_chunks(query)
+    
+    explanation = explain_text(explain_chunks, query, level)
+    
+    return explanation

@@ -1,7 +1,13 @@
 import requests
 import time
+import threading
+
+LAST_REQUEST_TIME = 0
+MIN_INTERVAL = 1.7
 
 def fetch_paper_data(query):
+    print(f"Thread ID: {threading.get_ident()}")
+    global LAST_REQUEST_TIME
     """
     Search Semantic Scholar for a paper.
     Returns:
@@ -21,7 +27,16 @@ def fetch_paper_data(query):
     
     try:
         print("Trying to send scholar api request")
-        time.sleep(5)
+        now = time.time()
+        elapsed = now - LAST_REQUEST_TIME
+        
+        if elapsed < MIN_INTERVAL:
+            sleep_time = MIN_INTERVAL - elapsed
+            print(f"Rate limiting: sleeping {sleep_time:.2f} seconds")
+            time.sleep(sleep_time)
+        
+        print("Sending request to Semantic Scholar")
+        LAST_REQUEST_TIME = time.time()
         response = requests.get(url, params=parameters, timeout=5)
         
         if response.status_code != 200:

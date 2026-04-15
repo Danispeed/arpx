@@ -51,4 +51,4 @@ def extract_references(text):
         references.append(line)
     
     # Limit the number of references (can also be changed later, look at how 10 works first)
-    return references[:10]
+    return references[:3]

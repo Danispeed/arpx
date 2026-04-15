@@ -1,8 +1,13 @@
-from openai import OpenAI
+from openai import AzureOpenAI
 from dotenv import load_dotenv
+import os
 
 load_dotenv()
-client = OpenAI()
+client = AzureOpenAI(
+    api_key=os.getenv("AZURE_OPENAI_KEY"),
+    api_version="2024-02-01",
+    azure_endpoint=os.getenv("AZURE_OPENAI_ENDPOINT")
+)
 
 def find_topics(chunks, query):
     # Combine all the retrieved chunks
@@ -21,7 +26,38 @@ def find_topics(chunks, query):
     """
     
     response = client.chat.completions.create(
-        model="gpt-4o-mini",
+        model=os.getenv("AZURE_OPENAI_DEPLOYMENT"),
+        messages=[
+            {"role": "user", "content": prompt}
+        ]
+    )
+    
+    return response.choices[0].message.content.strip()
+
+def explain_text(chunks, text, level):
+    context = "\n\n".join(chunks)
+    
+    prompt = f"""
+    You are an expert academic tutor.
+
+    The user has knowledge level {level} on a scale from 1 (beginner) to 10 (expert).
+
+    Based on the following research content:
+    
+    {context}
+    
+    Explain the main ideas of the paper.
+
+    Adapt your explanation:
+    - Level 1-3: very simple, intuitive, avoid jargon
+    - Level 4-6: moderate detail, explain key terms
+    - Level 7-10: technical, detailed, assume expertise
+
+    Be clear and structured.
+    """
+    
+    response = client.chat.completions.create(
+        model=os.getenv("AZURE_OPENAI_DEPLOYMENT"),
         messages=[
             {"role": "user", "content": prompt}
         ]

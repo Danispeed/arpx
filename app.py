@@ -14,6 +14,9 @@ if "topics" not in st.session_state:
 if "explained" not in st.session_state:
     st.session_state.explained = False
 
+if "explain" not in st.session_state:
+    st.session_state.explanation = None
+    
 # File upload
 uploaded_file = st.file_uploader("Upload a research paper of your choice as a PDF", type="pdf")
 
@@ -41,3 +44,9 @@ if st.session_state.analyzed:
     
     if st.button("Explain Paper"):
         explanation = explain_paper(level)
+        st.session_state.explanation = explanation
+        st.session_state.explained = True
+
+if st.session_state.explained:
+    st.subheader("Explanation")
+    st.write(st.session_state.explanation)
