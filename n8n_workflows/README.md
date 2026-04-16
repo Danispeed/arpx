@@ -9,11 +9,7 @@ This folder contains the n8n workflow export (`arpx-mvp.json`).
 Run these commands from your project root:
 
 ```bash
-docker volume create n8n_data
-docker run -d --name n8n \
-  -p 5678:5678 \
-  -v n8n_data:/home/node/.n8n \
-  docker.n8n.io/n8nio/n8n
+docker compose up -d
 ```
 
 Then open `http://localhost:5678`.
@@ -41,17 +37,13 @@ For n8n 2.x, production webhooks require both actions:
 
 ## Prompt workflow
 
-Prompt source of truth lives in [`prompts.yaml`](prompts.yaml). Do not manually edit prompt strings in [`arpx-mvp.json`](arpx-mvp.json) unless debugging.
+Prompt source of truth lives in [`prompts.yaml`](prompts.yaml). The workflow reads this file at runtime on every execution.
 
 1. Edit prompt content in `n8n_workflows/prompts.yaml`.
-2. Compile prompts into the workflow JSON:
+2. Trigger a webhook request (test or production URL).
+3. The workflow reads `/data/prompts.yaml`, parses prompt sections, and uses them for `ExplainerAgent` and `MermaidAgent`.
 
-```bash
-python3 scripts/build_workflow.py
-```
-
-3. Import the regenerated `n8n_workflows/arpx-mvp.json` into n8n.
-4. Publish + activate the workflow again.
+No workflow recompile or JSON re-import is required for prompt-only changes.
 
 The compiler updates only prompt text fields in `ExplainerAgent` and `MermaidAgent`.
 
