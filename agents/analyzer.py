@@ -1,8 +1,13 @@
-from openai import OpenAI
+from openai import AzureOpenAI
 from dotenv import load_dotenv
+import os
 
 load_dotenv()
-client = OpenAI()
+client = AzureOpenAI(
+    api_key=os.getenv("AZURE_OPENAI_KEY"),
+    api_version="2024-02-01",
+    azure_endpoint=os.getenv("AZURE_OPENAI_ENDPOINT")
+)
 
 def find_topics(chunks, query):
     # Combine all the retrieved chunks
@@ -21,7 +26,7 @@ def find_topics(chunks, query):
     """
     
     response = client.chat.completions.create(
-        model="gpt-4o-mini",
+        model=os.getenv("AZURE_OPENAI_DEPLOYMENT"),
         messages=[
             {"role": "user", "content": prompt}
         ]

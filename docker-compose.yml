@@ -1,0 +1,22 @@
+version: "3.8"
+
+services:
+  app:
+    build: . # Use the Dockerfile in this current folder
+    ports:
+      - "8051:8051"
+    depends_on:
+      - weaviate
+    environment:
+      - WEAVIATE_URL=http://weaviate:8080
+  
+  # Downloads a already prebuilt Docker image from the network
+  weaviate:
+    image: semitechnologies/weaviate:latest
+    ports:
+      - "8080:8080"
+      - "50051:50051"
+    environment:
+      QUERY_DEFAULTS_LIMIT: 25
+      AUTHENTICATION_ANONYMOUS_ACCESS_ENABLED: 'true'
+      DEFAULT_VECTORIZER_MODULE: 'none'
