@@ -1,64 +1,62 @@
 # ARPX: Adaptive Research Paper Explainer
 
-ARPX is a student-built AI system that helps users understand research papers at different knowledge levels. The project direction is local analysis for ingestion/retrieval, with n8n workflows handling explanation and visual generation.
+Arpx is a Generative AI system that analyzes resarch papers and generates adaptive explanations based on the user's knowledge level.
 
-## Highlights
+The system uses Retrieval-Augmented Generation (RAG), a vector database (Weaviate), and an orchestration layer (n8n) to process and explain academic content. HER: Legg til resten av hva som blir brukt.
 
-- Adaptive user control: users set explanation depth from level 1-10.
-- Local analysis pipeline: uploaded PDFs are parsed, chunked, embedded, and indexed in Weaviate.
-- n8n-first orchestration: explanation and visualization are executed through workflow agents.
-- Dual output direction: text explanation plus visual artifacts (diagram/image) from the n8n flow.
-- Streamlit-first UX: simple upload-and-analyze experience for demos and iteration.
+## Features
+- Upload research papers (PDF)
+- Receive the main topics from the paper
+- Semantic search using vector embeddings
+- Modular architecture with orchestrated agents
 
-## Overview
+## Syetem Arcitecture
+The system is composed of x main components:
 
-This repository contains the ARPX course project scaffold and integration surface between a local analysis backend and workflow-based AI orchestration.  
-The intended operating model is: local preprocessing and retrieval context generation, then n8n-managed agent execution for explanation and visuals.
+- Frontend & Application Layer
+    - Streamlit app
+    - Handles file upload, UI, and user interaction
+- Vector Database
+    - Weaviate
+    - Stores embeddings and enables semantic retrieval
+- Orchestration Layer
+    - n8n
+    - Coordinates LLM calls and generates explanations + diagrams
 
-If you are evaluating the project quickly, start with Quickstart and then read the setup docs linked below for specific subsystems.
+## Running the Project (Docker)
+### Prerequisites
+- Docker installed
+- Docker Compose installed
 
-## Quickstart
-
-### 1) Clone and enter the project
-
-```bash
-git clone <your-repo-url>
-cd arpx
-```
-
-### 2) Create and activate a virtual environment
-
-```bash
-python -m venv .venv
-source .venv/bin/activate
-```
-
-### 3) Install dependencies
+1. Start the system
+From the project root:
 
 ```bash
-pip install -r requirements.txt
+docker compose up --build
 ```
 
-### 4) Configure environment variables
+2. Open the application
+Go to:
 
-Create a `.env` file in the project root for credentials used in your active workflow setup.
+http://localhost:8051
 
-For local testing paths, this may include:
+3. (Optional) Access Weaviate
+http://localhost:8080/v1/meta
 
-```env
-OPENAI_API_KEY=your_api_key_here
-```
+## Environment Variables
+The following environment variables need to be set:
+- OPENAI_KEY
+- AZURE_OPENAI_ENDPOINT
+- AZURE_OPENAI_DEPLOYMENT
 
-### 5) Ensure Weaviate is available locally
-
-The current code expects Weaviate at `127.0.0.1:8080`.  
-See [`docs/setup-weaviate.md`](docs/setup-weaviate.md).
-
-### 6) Run the app
-
-```bash
-streamlit run app.py
-```
+## How it Works
+1. User uploads a research paper
+2. The paper is processed and split into chunks
+3. Embeddings are generated and stored in Weaviate
+4. Relevant chunks are retrieved using semantic search
+5. The system calls an LLM to find the main topics of the research using the relevant chunks
+6. Based on the topics, the user select the knowledge level
+7. ...
 
 ## Usage
 
