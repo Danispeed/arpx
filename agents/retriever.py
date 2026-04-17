@@ -1,13 +1,15 @@
 from rag.utils import extract_text_from_pdf, extract_references
 from rag.chunking import chunk_text
 from rag.embeddings import embed_chunks
-from rag.weaviate_db import create_schema, store_chunks, query_chunks
+from rag.weaviate_db import create_schema, store_chunks, query_chunks, clear
 from rag.semantic_scholar import fetch_paper_data
 import requests
 import io
 
 # Index both the main paper and the referenced papers
 def index_papers(paper):
+    # Clear anything previously stored in the database fom earlier runs
+    clear()
     # Begin with main paper
     # Extract text
     text = extract_text_from_pdf(paper)  

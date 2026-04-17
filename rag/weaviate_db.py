@@ -1,9 +1,13 @@
 import weaviate
 import weaviate.classes as wvc
 
-client = weaviate.connect_to_local(
-    host="127.0.0.1",
-    port=8080
+client = weaviate.connect_to_custom(
+    http_host="weaviate",
+    http_port=8080,
+    http_secure=False,
+    grpc_host="weaviate",
+    grpc_port=50051,
+    grpc_secure=False,
 )
 
 # class = name of the table

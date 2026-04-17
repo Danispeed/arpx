@@ -43,10 +43,13 @@ if st.session_state.analyzed:
     )
     
     if st.button("Explain Paper"):
-        explanation = explain_paper(level)
-        st.session_state.explanation = explanation
+        result = explain_paper(level, st.session_state.topics)
+        
+        # Just store the resukt for now
+        st.session_state.explanation = result
         st.session_state.explained = True
 
+# Display result (raw for now)
 if st.session_state.explained:
     st.subheader("Explanation")
     st.write(st.session_state.explanation)
