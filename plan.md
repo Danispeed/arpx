@@ -92,3 +92,5 @@ Technical domains are divided as follows:
 | Agent Orchestrator | Deploy n8n, design multi-agent routing logic, and engineer adaptive system prompts. | n8n_workflows/, prompts.yaml |
 | Compute and Visuals | Manage local Ollama deployment, implement local Stable Diffusion pipeline with LoRAs, and handle Mermaid rendering. | local_compute/, visual_engine/ |
 | Frontend Lead | Build the Streamlit UI, handle webhook API calls to n8n, manage session state, and compile the final demonstration. | app.py, api_client.py |
+
+*Acknowledgement: This project blueprint was generated with the assistance of Gemini 3.1 Pro.*
