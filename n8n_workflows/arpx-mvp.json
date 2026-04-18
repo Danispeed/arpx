@@ -1,0 +1,560 @@
+{
+  "name": "arpx-mvp",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "arpx/orchestrate",
+        "responseMode": "responseNode",
+        "options": {}
+      },
+      "id": "afd1fb05-4ac8-4354-b649-5d5e92ef401c",
+      "name": "Webhook",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [
+        -816,
+        1024
+      ],
+      "webhookId": "arpx-orchestrate"
+    },
+    {
+      "parameters": {
+        "operation": "read",
+        "fileSelector": "/data/prompts.yaml",
+        "options": {
+          "putOutputFileInField": "promptFile"
+        }
+      },
+      "id": "a2168f85-f98e-4d87-b677-478532f34a77",
+      "name": "ReadPromptsFile",
+      "type": "n8n-nodes-base.readWriteFile",
+      "typeVersion": 1.1,
+      "position": [
+        -816,
+        832
+      ]
+    },
+    {
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "jsCode": "const binaryKey = $input.first().binary?.promptFile ? 'promptFile' : 'data';\nconst buf = await this.helpers.getBinaryDataBuffer(0, binaryKey);\nlet raw = buf.toString('utf8').replace(/\\r\\n?/g, '\\n');\nif (!raw.endsWith('\\n')) raw += '\\n';\n\nconst cMatch = raw.match(/shared:\\n\\s+constraints:\\n((?:\\s+-\\s+\"[^\"]*\"\\n)+)/);\nconst constraints = cMatch\n  ? [...cMatch[1].matchAll(/\"([^\"]+)\"/g)].map(m => m[1])\n  : [];\nconst cBlock = constraints.length\n  ? '\\n\\nConstraints:\\n' + constraints.map(c => '- ' + c).join('\\n')\n  : '';\n\nfunction block(yaml, section, key) {\n  const re = new RegExp(section + ':[\\\\s\\\\S]*?\\\\n  ' + key + ': \\\\|\\\\n((?:    .*\\\\n|\\\\n)*)');\n  const m = yaml.match(re);\n  if (!m) return '';\n  return m[1].replace(/^    /gm, '').trimEnd();\n}\n\nconst explainer_system = block(raw, 'explainer', 'system') + cBlock;\nconst explainer_user_template = block(raw, 'explainer', 'user_template');\nconst mermaid_system = block(raw, 'mermaid', 'system') + cBlock;\nconst mermaid_user_template = block(raw, 'mermaid', 'user_template');\n\nreturn [{\n  json: {\n    explainer_system,\n    explainer_user_template,\n    mermaid_system,\n    mermaid_user_template,\n  },\n}];"
+      },
+      "id": "e70138a1-c0f7-440d-a179-bbdc1338d51e",
+      "name": "ParsePromptsYaml",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -592,
+        832
+      ]
+    },
+    {
+      "parameters": {
+        "mode": "combine",
+        "combineBy": "combineByPosition",
+        "options": {}
+      },
+      "id": "2267f265-92d7-4e7e-8cd4-a0db906d4694",
+      "name": "MergeWebhookAndPrompts",
+      "type": "n8n-nodes-base.merge",
+      "typeVersion": 3.2,
+      "position": [
+        -592,
+        1024
+      ]
+    },
+    {
+      "parameters": {
+        "fields": {
+          "values": [
+            {
+              "name": "paper_excerpt",
+              "stringValue": "={{ String($json.body?.paper_excerpt ?? '') }}"
+            },
+            {
+              "name": "level",
+              "stringValue": "={{ String($json.body?.level ?? '5') }}"
+            },
+            {
+              "name": "topics",
+              "stringValue": "={{ JSON.stringify($json.body?.topics ?? []) }}"
+            },
+            {
+              "name": "stage",
+              "stringValue": "={{ String($json.body?.stage ?? 'explain') }}"
+            },
+            {
+              "name": "include_mermaid",
+              "stringValue": "={{ String($json.body?.include_mermaid ?? 'true') }}"
+            },
+            {
+              "name": "explainer_system",
+              "stringValue": "={{ String($json.explainer_system ?? '') }}"
+            },
+            {
+              "name": "explainer_user_template",
+              "stringValue": "={{ String($json.explainer_user_template ?? '') }}"
+            },
+            {
+              "name": "mermaid_system",
+              "stringValue": "={{ String($json.mermaid_system ?? '') }}"
+            },
+            {
+              "name": "mermaid_user_template",
+              "stringValue": "={{ String($json.mermaid_user_template ?? '') }}"
+            }
+          ]
+        },
+        "include": "none",
+        "options": {}
+      },
+      "id": "cbbbe21b-c6a1-41f3-b479-d853321e457a",
+      "name": "NormalizeInput",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.2,
+      "position": [
+        -368,
+        1024
+      ]
+    },
+    {
+      "parameters": {
+        "rules": {
+          "values": [
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": false,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 2
+                },
+                "conditions": [
+                  {
+                    "id": "c-ping",
+                    "leftValue": "={{ $json.stage }}",
+                    "rightValue": "ping",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals",
+                      "name": "filter.operator.equals"
+                    }
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "ping"
+            }
+          ]
+        },
+        "options": {
+          "fallbackOutput": "extra",
+          "ignoreCase": true,
+          "renameFallbackOutput": "orchestrate"
+        }
+      },
+      "id": "39172fb4-6387-4be2-b422-40d31ac7a7df",
+      "name": "Supervisor",
+      "type": "n8n-nodes-base.switch",
+      "typeVersion": 3.2,
+      "position": [
+        -144,
+        1024
+      ]
+    },
+    {
+      "parameters": {
+        "fields": {
+          "values": [
+            {
+              "name": "text_explanation",
+              "stringValue": "pong"
+            },
+            {
+              "name": "mermaid_code",
+              "stringValue": "flowchart TD\\nA[ARPX_OK]"
+            },
+            {
+              "name": "debug",
+              "type": "objectValue",
+              "objectValue": "={{ {\"route\":\"ping\"} }}"
+            }
+          ]
+        },
+        "include": "none",
+        "options": {}
+      },
+      "id": "1e174b8d-ea2f-4abf-b407-97045d52c078",
+      "name": "PingShape",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.2,
+      "position": [
+        -112,
+        832
+      ]
+    },
+    {
+      "parameters": {
+        "options": {}
+      },
+      "id": "40366be0-ba9e-4cbb-95a0-722f47a1adcd",
+      "name": "RespondPing",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.4,
+      "position": [
+        128,
+        832
+      ]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://gpt-course.cognitiveservices.azure.com/openai/deployments/gpt-5-chat/chat/completions?api-version=2024-12-01-preview",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "httpHeaderAuth",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ { messages: [ { role: \"system\", content: $json.explainer_system }, { role: \"user\", content: $json.explainer_user_template.replace('{paper_excerpt}', $json.paper_excerpt).replace('{topics}', $json.topics).replace('{level}', $json.level) } ], temperature: 0.5, max_completion_tokens: 1200 } }}",
+        "options": {}
+      },
+      "id": "9d043641-e009-44e1-b3c6-34d8aebb80ae",
+      "name": "ExplainerAgent",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        -112,
+        1136
+      ],
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "OlznxoofcjeRU7GT",
+          "name": "Header Auth account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://gpt-course.cognitiveservices.azure.com/openai/deployments/gpt-4.1-mini/chat/completions?api-version=2024-12-01-preview",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "httpHeaderAuth",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ { messages: [ { role: \"system\", content: $json.mermaid_system }, { role: \"user\", content: $json.mermaid_user_template.replace('{paper_excerpt}', $json.paper_excerpt).replace('{topics}', $json.topics) } ], temperature: 0.3, max_completion_tokens: 900 } }}",
+        "options": {}
+      },
+      "id": "21b23dec-878a-48e6-855c-4f341b08f640",
+      "name": "MermaidAgent",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        -112,
+        1312
+      ],
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "OlznxoofcjeRU7GT",
+          "name": "Header Auth account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "fields": {
+          "values": [
+            {
+              "name": "text_explanation",
+              "stringValue": "={{ $json.choices?.[0]?.message?.content || \"\" }}"
+            }
+          ]
+        },
+        "include": "none",
+        "options": {}
+      },
+      "id": "1b41f9a8-88c9-4e92-9f81-70253bfc23e5",
+      "name": "SetExplainerOutput",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.2,
+      "position": [
+        112,
+        1136
+      ]
+    },
+    {
+      "parameters": {
+        "fields": {
+          "values": [
+            {
+              "name": "mermaid_code",
+              "stringValue": "={{ $json.choices?.[0]?.message?.content || \"\" }}"
+            }
+          ]
+        },
+        "include": "none",
+        "options": {}
+      },
+      "id": "7b6df280-60a6-45c7-8e51-d13e34936dca",
+      "name": "SetMermaidOutput",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.2,
+      "position": [
+        112,
+        1312
+      ]
+    },
+    {
+      "parameters": {
+        "mode": "combine",
+        "combineBy": "combineByPosition",
+        "options": {}
+      },
+      "id": "92b2de5c-5816-48ab-a0c1-98612747290e",
+      "name": "MergeAgents",
+      "type": "n8n-nodes-base.merge",
+      "typeVersion": 3.2,
+      "position": [
+        336,
+        1216
+      ]
+    },
+    {
+      "parameters": {
+        "fields": {
+          "values": [
+            {
+              "name": "text_explanation",
+              "stringValue": "={{ $json.text_explanation }}"
+            },
+            {
+              "name": "mermaid_code",
+              "stringValue": "={{ $json.mermaid_code }}"
+            },
+            {
+              "name": "debug",
+              "type": "objectValue",
+              "objectValue": "={{ { stage: $('NormalizeInput').first().json.stage, route: 'orchestrate' } }}"
+            }
+          ]
+        },
+        "include": "none",
+        "options": {}
+      },
+      "id": "dda3674f-872a-4519-947f-9a68cbed7771",
+      "name": "FinalShape",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.2,
+      "position": [
+        560,
+        1216
+      ]
+    },
+    {
+      "parameters": {
+        "options": {}
+      },
+      "id": "200da447-8113-4075-8a66-22010018c44c",
+      "name": "RespondMain",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.4,
+      "position": [
+        768,
+        1216
+      ]
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Webhook": {
+      "main": [
+        [
+          {
+            "node": "ReadPromptsFile",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "MergeWebhookAndPrompts",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "ReadPromptsFile": {
+      "main": [
+        [
+          {
+            "node": "ParsePromptsYaml",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "ParsePromptsYaml": {
+      "main": [
+        [
+          {
+            "node": "MergeWebhookAndPrompts",
+            "type": "main",
+            "index": 1
+          }
+        ]
+      ]
+    },
+    "MergeWebhookAndPrompts": {
+      "main": [
+        [
+          {
+            "node": "NormalizeInput",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "NormalizeInput": {
+      "main": [
+        [
+          {
+            "node": "Supervisor",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Supervisor": {
+      "main": [
+        [
+          {
+            "node": "PingShape",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "ExplainerAgent",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "MermaidAgent",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "PingShape": {
+      "main": [
+        [
+          {
+            "node": "RespondPing",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "ExplainerAgent": {
+      "main": [
+        [
+          {
+            "node": "SetExplainerOutput",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "MermaidAgent": {
+      "main": [
+        [
+          {
+            "node": "SetMermaidOutput",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "SetExplainerOutput": {
+      "main": [
+        [
+          {
+            "node": "MergeAgents",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "SetMermaidOutput": {
+      "main": [
+        [
+          {
+            "node": "MergeAgents",
+            "type": "main",
+            "index": 1
+          }
+        ]
+      ]
+    },
+    "MergeAgents": {
+      "main": [
+        [
+          {
+            "node": "FinalShape",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "FinalShape": {
+      "main": [
+        [
+          {
+            "node": "RespondMain",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": true,
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate"
+  },
+  "versionId": "064ce4c5-8baf-4a29-b1e0-0a0a7abdbccb",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "4025fa10eda4d91d54513f88898717ba3e567804a40d635c8f1406808ca4abc6"
+  },
+  "id": "361a3f66-8d5b-439e-8cbb-090b7aa62934",
+  "tags": []
+}

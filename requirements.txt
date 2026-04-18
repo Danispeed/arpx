@@ -9,3 +9,4 @@ weaviate-client
 openai
 python-dotenv
 requests
+streamlit-mermaid

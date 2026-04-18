@@ -1,5 +1,7 @@
 import streamlit as st
 from agents.supervisor import analyze_paper, explain_paper
+import streamlit_mermaid as stmd
+
 
 st.title("ARPX - Adaptive Research Paper Explainer")
 st.write("Upload a research paper and get a tailored explanation!")
@@ -14,7 +16,7 @@ if "topics" not in st.session_state:
 if "explained" not in st.session_state:
     st.session_state.explained = False
 
-if "explain" not in st.session_state:
+if "explanation" not in st.session_state:
     st.session_state.explanation = None
     
 # File upload
@@ -45,11 +47,20 @@ if st.session_state.analyzed:
     if st.button("Explain Paper"):
         result = explain_paper(level, st.session_state.topics)
         
-        # Just store the resukt for now
         st.session_state.explanation = result
         st.session_state.explained = True
-
-# Display result (raw for now)
+    
 if st.session_state.explained:
     st.subheader("Explanation")
-    st.write(st.session_state.explanation)
+    
+    result = st.session_state.explanation
+    
+    if result:
+        # Show text
+        st.markdown(result.get("text_explanation", ""))
+        
+        # Show diagram
+        st.subheader("Diagram")
+        
+        mermaid_code = result.get("mermaid_code", "")
+        stmd.st_mermaid(mermaid_code)
