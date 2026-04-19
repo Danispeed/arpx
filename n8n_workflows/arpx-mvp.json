@@ -246,7 +246,7 @@
     {
       "parameters": {
         "method": "POST",
-        "url": "https://gpt-course.cognitiveservices.azure.com/openai/deployments/gpt-4.1-mini/chat/completions?api-version=2024-12-01-preview",
+        "url": "https://gpt-course.cognitiveservices.azure.com/openai/deployments/gpt-5-chat/chat/completions?api-version=2024-12-01-preview",
         "authentication": "predefinedCredentialType",
         "nodeCredentialType": "httpHeaderAuth",
         "sendHeaders": true,

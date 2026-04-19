@@ -102,6 +102,6 @@ Expected response includes:
 
 - Azure endpoint used by both nodes: `https://gpt-course.cognitiveservices.azure.com`.
 - Explainer deployment/model: `gpt-5-chat`.
-- Mermaid deployment/model: `gpt-4.1-mini`.
+- Mermaid deployment/model: `gpt-5-chat`.
 - Keep API keys only in n8n credentials, never in git.
 - If node version warnings appear on import, re-save the workflow in n8n and export again.

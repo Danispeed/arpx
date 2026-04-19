@@ -4,10 +4,14 @@ import os
 
 load_dotenv()
 
+# Empty AZURE_OPENAI_API_VERSION is common in .env; Azure often returns 404 for a bad or missing api-version.
+_AZURE_API_VERSION = (os.getenv("AZURE_OPENAI_API_VERSION") or "").strip() or "2024-10-21"
+_AZURE_ENDPOINT = (os.getenv("AZURE_OPENAI_ENDPOINT") or "").strip().rstrip("/")
+
 client = AzureOpenAI(
     api_key=os.getenv("AZURE_OPENAI_KEY"),
-    api_version=os.getenv("AZURE_OPENAI_API_VERSION"),
-    azure_endpoint=os.getenv("AZURE_OPENAI_ENDPOINT")
+    api_version=_AZURE_API_VERSION,
+    azure_endpoint=_AZURE_ENDPOINT or None,
 )
 
 def find_topics(chunks, query):
@@ -27,7 +31,7 @@ def find_topics(chunks, query):
     """
     
     response = client.chat.completions.create(
-        model=os.getenv("AZURE_OPENAI_DEPLOYMENT"),
+        model=(os.getenv("AZURE_OPENAI_DEPLOYMENT") or "").strip(),
         messages=[
             {"role": "user", "content": prompt}
         ]
