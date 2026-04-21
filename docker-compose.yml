@@ -3,16 +3,23 @@ version: "3.8"
 services:
   app:
     build: . # Use the Dockerfile in this current folder
+    container_name: app
     ports:
       - "8051:8051"
     depends_on:
       - weaviate
+      - n8n
     environment:
       - WEAVIATE_URL=http://weaviate:8080
+      - N8N_URL=http://n8n:5678/webhook/arpx/orchestrate
+    volumes:
+      - .:/arpx
+    restart: always
   
   # Downloads a already prebuilt Docker image from the network
   weaviate:
     image: semitechnologies/weaviate:latest
+    container_name: weaviate
     ports:
       - "8080:8080"
       - "50051:50051"
@@ -20,3 +27,19 @@ services:
       QUERY_DEFAULTS_LIMIT: 25
       AUTHENTICATION_ANONYMOUS_ACCESS_ENABLED: 'true'
       DEFAULT_VECTORIZER_MODULE: 'none'
+    restart: always
+
+  n8n:
+    image: docker.n8n.io/n8nio/n8n
+    container_name: n8n
+    ports:
+      - "5678:5678"
+    volumes:
+      - n8n_data:/home/node/.n8n
+      - ./n8n_workflows:/data
+    environment:
+      - N8N_RESTRICT_FILE_ACCESS_TO=/home/node/.n8n-files;/data
+    restart: always
+
+volumes:
+  n8n_data:

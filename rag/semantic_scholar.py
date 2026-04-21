@@ -3,7 +3,7 @@ import time
 import threading
 
 LAST_REQUEST_TIME = 0
-MIN_INTERVAL = 1.7
+MIN_INTERVAL = 3
 
 def fetch_paper_data(query):
     print(f"Thread ID: {threading.get_ident()}")
@@ -26,18 +26,20 @@ def fetch_paper_data(query):
     }
     
     try:
-        print("Trying to send scholar api request")
+        print("Trying to send scholar api request for the resource: ", query)
         now = time.time()
         elapsed = now - LAST_REQUEST_TIME
         
         if elapsed < MIN_INTERVAL:
-            sleep_time = MIN_INTERVAL - elapsed
-            print(f"Rate limiting: sleeping {sleep_time:.2f} seconds")
-            time.sleep(sleep_time)
+            time.sleep(MIN_INTERVAL)
         
         print("Sending request to Semantic Scholar")
         LAST_REQUEST_TIME = time.time()
-        response = requests.get(url, params=parameters, timeout=5)
+        response = safe_request(url, parameters)
+        
+        if response == None:
+            print("All retries failed")
+            return None
         
         if response.status_code != 200:
             print("Semantic Scholar error")
@@ -46,6 +48,8 @@ def fetch_paper_data(query):
             return None
         
         data = response.json()
+        
+        print("The request was successful")
         
         if data.get("total", 0) == 0:
             print("Nothing was returned")
@@ -64,3 +68,20 @@ def fetch_paper_data(query):
     except Exception as e:
         print("Semantic Scholar error:", e)
         return None
+
+def safe_request(url, params, retries=3):
+    for attempt in range(retries):
+        response = requests.get(url, params=params, timeout=5)
+        
+        if response.status_code == 200:
+            return response
+
+        if response.status_code == 429:
+            wait = 2 ** attempt # exponential backoff
+            print(f"Rate limited. Sleeping {wait} seconds")
+            time.sleep(wait)
+            continue
+        
+        return response
+    
+    return None

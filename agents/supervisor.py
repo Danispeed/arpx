@@ -19,7 +19,7 @@ def analyze_paper(paper):
 
 def explain_paper(level, topics):
     # Health check
-    ping = call_orchestrator(stage="ping")
+    ping = call_orchestrator("ping", None, None, None)
     
     if not ping or ping.get("text_explanation") != "pong":
         return {
