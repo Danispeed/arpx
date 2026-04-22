@@ -238,7 +238,7 @@
     },
     {
       "parameters": {
-        "respondWith": "lastEntry",
+        "respondWith": "firstIncomingItem",
         "options": {}
       },
       "id": "40366be0-ba9e-4cbb-95a0-722f47a1adcd",
@@ -412,7 +412,7 @@
     },
     {
       "parameters": {
-        "respondWith": "lastEntry",
+        "respondWith": "firstIncomingItem",
         "options": {}
       },
       "id": "200da447-8113-4075-8a66-22010018c44c",
@@ -506,7 +506,7 @@
     },
     {
       "parameters": {
-        "respondWith": "lastEntry",
+        "respondWith": "firstIncomingItem",
         "options": {}
       },
       "id": "e4f5a6b7-c8d9-0123-defa-234567890123",
