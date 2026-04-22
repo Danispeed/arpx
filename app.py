@@ -63,4 +63,5 @@ if st.session_state.explained:
         st.subheader("Diagram")
         
         mermaid_code = result.get("mermaid_code", "")
-        stmd.st_mermaid(mermaid_code)
+        if mermaid_code:
+            stmd.st_mermaid(mermaid_code)
