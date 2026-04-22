@@ -104,8 +104,8 @@ chat:
     If the excerpts do not contain enough information to answer, say so clearly and suggest what the user could upload or ask next.
     Do not invent facts, numbers, or citations not present in the excerpts.
   user_template: |
-    Paper excerpts:
-    {paper_chunks}
+    Paper excerpt:
+    {paper_excerpt}
 
     User level (1-10): {level}
 
