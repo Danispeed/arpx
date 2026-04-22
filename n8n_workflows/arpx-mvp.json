@@ -38,7 +38,7 @@
     {
       "parameters": {
         "mode": "runOnceForAllItems",
-        "jsCode": "const binaryKey = $input.first().binary?.promptFile ? 'promptFile' : 'data';\nconst buf = await this.helpers.getBinaryDataBuffer(0, binaryKey);\nlet raw = buf.toString('utf8').replace(/\\r\\n?/g, '\\n');\nif (!raw.endsWith('\\n')) raw += '\\n';\n\nconst cMatch = raw.match(/shared:\\n\\s+constraints:\\n((?:\\s+-\\s+\"[^\"]*\"\\n)+)/);\nconst constraints = cMatch\n  ? [...cMatch[1].matchAll(/\"([^\"]+)\"/g)].map(m => m[1])\n  : [];\nconst cBlock = constraints.length\n  ? '\\n\\nConstraints:\\n' + constraints.map(c => '- ' + c).join('\\n')\n  : '';\n\nfunction block(yaml, section, key) {\n  const re = new RegExp(section + ':[\\\\s\\\\S]*?\\\\n  ' + key + ': \\\\|\\\\n((?:    .*\\\\n|\\\\n)*)');\n  const m = yaml.match(re);\n  if (!m) return '';\n  return m[1].replace(/^    /gm, '').trimEnd();\n}\n\nconst explainer_system = block(raw, 'explainer', 'system') + cBlock;\nconst explainer_user_template = block(raw, 'explainer', 'user_template');\nconst mermaid_system = block(raw, 'mermaid', 'system') + cBlock;\nconst mermaid_user_template = block(raw, 'mermaid', 'user_template');\n\nreturn [{\n  json: {\n    explainer_system,\n    explainer_user_template,\n    mermaid_system,\n    mermaid_user_template,\n  },\n}];"
+        "jsCode": "const binaryKey = $input.first().binary?.promptFile ? 'promptFile' : 'data';\nconst buf = await this.helpers.getBinaryDataBuffer(0, binaryKey);\nlet raw = buf.toString('utf8').replace(/\\r\\n?/g, '\\n');\nif (!raw.endsWith('\\n')) raw += '\\n';\n\nconst cMatch = raw.match(/shared:\\n\\s+constraints:\\n((?:\\s+-\\s+\"[^\"]*\"\\n)+)/);\nconst constraints = cMatch\n  ? [...cMatch[1].matchAll(/\"([^\"]+)\"/g)].map(m => m[1])\n  : [];\nconst cBlock = constraints.length\n  ? '\\n\\nConstraints:\\n' + constraints.map(c => '- ' + c).join('\\n')\n  : '';\n\nfunction block(yaml, section, key) {\n  const re = new RegExp(section + ':[\\\\s\\\\S]*?\\\\n  ' + key + ': \\\\|\\\\n((?:    .*\\\\n|\\\\n)*)');\n  const m = yaml.match(re);\n  if (!m) return '';\n  return m[1].replace(/^    /gm, '').trimEnd();\n}\n\nconst explainer_system = block(raw, 'explainer', 'system') + cBlock;\nconst explainer_user_template = block(raw, 'explainer', 'user_template');\nconst mermaid_system = block(raw, 'mermaid', 'system') + cBlock;\nconst mermaid_user_template = block(raw, 'mermaid', 'user_template');\nconst chat_system = block(raw, 'chat', 'system') + cBlock;\nconst chat_user_template = block(raw, 'chat', 'user_template');\n\nreturn [{\n  json: {\n    explainer_system,\n    explainer_user_template,\n    mermaid_system,\n    mermaid_user_template,\n    chat_system,\n    chat_user_template,\n  },\n}];"
       },
       "id": "e70138a1-c0f7-440d-a179-bbdc1338d51e",
       "name": "ParsePromptsYaml",
@@ -103,6 +103,22 @@
             {
               "name": "mermaid_user_template",
               "stringValue": "={{ String($json.mermaid_user_template ?? '') }}"
+            },
+            {
+              "name": "chat_system",
+              "stringValue": "={{ String($json.chat_system ?? '') }}"
+            },
+            {
+              "name": "chat_user_template",
+              "stringValue": "={{ String($json.chat_user_template ?? '') }}"
+            },
+            {
+              "name": "query",
+              "stringValue": "={{ String($json.body?.query ?? '') }}"
+            },
+            {
+              "name": "history",
+              "stringValue": "={{ JSON.stringify($json.body?.history ?? []) }}"
             }
           ]
         },
@@ -146,13 +162,38 @@
               },
               "renameOutput": true,
               "outputKey": "ping"
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": false,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 2
+                },
+                "conditions": [
+                  {
+                    "id": "c-chat",
+                    "leftValue": "={{ $json.stage }}",
+                    "rightValue": "chat",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals",
+                      "name": "filter.operator.equals"
+                    }
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "chat"
             }
           ]
         },
         "options": {
           "fallbackOutput": "extra",
           "ignoreCase": true,
-          "renameFallbackOutput": "orchestrate"
+          "renameFallbackOutput": "explain"
         }
       },
       "id": "39172fb4-6387-4be2-b422-40d31ac7a7df",
@@ -197,6 +238,7 @@
     },
     {
       "parameters": {
+        "respondWith": "firstIncomingItem",
         "options": {}
       },
       "id": "40366be0-ba9e-4cbb-95a0-722f47a1adcd",
@@ -370,6 +412,7 @@
     },
     {
       "parameters": {
+        "respondWith": "firstIncomingItem",
         "options": {}
       },
       "id": "200da447-8113-4075-8a66-22010018c44c",
@@ -379,6 +422,100 @@
       "position": [
         768,
         1216
+      ]
+    },
+    {
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "jsCode": "const item = $input.first().json;\nconst systemPrompt = (item.chat_system || '').trim();\nconst paperExcerpt = String(item.paper_excerpt || '');\nconst userMsg = (item.chat_user_template || '')\n  .replace('{paper_excerpt}', paperExcerpt)\n  .replace('{level}', item.level || '5')\n  .replace('{query}', item.query || '');\nlet history = [];\ntry { const parsed = JSON.parse(item.history || '[]'); if (Array.isArray(parsed)) history = parsed; } catch (e) {}\nconst messages = [\n  { role: 'system', content: systemPrompt },\n  ...history,\n  { role: 'user', content: userMsg }\n];\nreturn [{ json: { messages } }];"
+      },
+      "id": "b1c2d3e4-f5a6-7890-abcd-ef1234567890",
+      "name": "BuildChatMessages",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -112,
+        1488
+      ]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://gpt-course.cognitiveservices.azure.com/openai/deployments/gpt-5-chat/chat/completions?api-version=2024-12-01-preview",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "httpHeaderAuth",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ { messages: $json.messages, temperature: 0.5, max_completion_tokens: 1200 } }}",
+        "options": {}
+      },
+      "id": "c2d3e4f5-a6b7-8901-bcde-f12345678901",
+      "name": "ChatAgent",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        112,
+        1488
+      ],
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "OlznxoofcjeRU7GT",
+          "name": "Header Auth account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "fields": {
+          "values": [
+            {
+              "name": "text_explanation",
+              "stringValue": "={{ $json.choices?.[0]?.message?.content || '' }}"
+            },
+            {
+              "name": "mermaid_code",
+              "stringValue": ""
+            },
+            {
+              "name": "debug",
+              "type": "objectValue",
+              "objectValue": "={{ { stage: 'chat', route: 'orchestrate' } }}"
+            }
+          ]
+        },
+        "include": "none",
+        "options": {}
+      },
+      "id": "d3e4f5a6-b7c8-9012-cdef-123456789012",
+      "name": "SetChatOutput",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.2,
+      "position": [
+        336,
+        1488
+      ]
+    },
+    {
+      "parameters": {
+        "respondWith": "firstIncomingItem",
+        "options": {}
+      },
+      "id": "e4f5a6b7-c8d9-0123-defa-234567890123",
+      "name": "RespondChat",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.4,
+      "position": [
+        560,
+        1488
       ]
     }
   ],
@@ -449,6 +586,13 @@
         [
           {
             "node": "PingShape",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "BuildChatMessages",
             "type": "main",
             "index": 0
           }
@@ -538,6 +682,39 @@
         [
           {
             "node": "RespondMain",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "BuildChatMessages": {
+      "main": [
+        [
+          {
+            "node": "ChatAgent",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "ChatAgent": {
+      "main": [
+        [
+          {
+            "node": "SetChatOutput",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "SetChatOutput": {
+      "main": [
+        [
+          {
+            "node": "RespondChat",
             "type": "main",
             "index": 0
           }
