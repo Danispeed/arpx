@@ -1,0 +1,14 @@
+# Eval grid — 3 papers × 10 levels = 30 cases per agent.
+# Add expected_topics: the key concepts the explainer must address.
+
+papers:
+  - path: evals/papers/attention.pdf
+    expected_topics: [transformer, attention, self-attention, encoder, decoder, multi-head-attention, positional-encoding]
+
+  - path: evals/papers/pesto.pdf
+    expected_topics: [pose-estimation, keypoints, heatmap, skeleton, human-pose]
+
+  - path: evals/papers/tensorflow.pdf
+    expected_topics: [tensorflow, dataflow-graph, tensor, distributed-training, machine-learning-framework]
+
+levels: [1, 2, 3, 4, 5, 6, 7, 8, 9, 10]

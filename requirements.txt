@@ -10,3 +10,7 @@ openai
 python-dotenv
 requests
 streamlit-mermaid
+dspy-ai
+ragas
+tenacity
+pyyaml
