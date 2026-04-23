@@ -38,7 +38,7 @@
     {
       "parameters": {
         "mode": "runOnceForAllItems",
-        "jsCode": "const binaryKey = $input.first().binary?.promptFile ? 'promptFile' : 'data';\nconst buf = await this.helpers.getBinaryDataBuffer(0, binaryKey);\nlet raw = buf.toString('utf8').replace(/\\r\\n?/g, '\\n');\nif (!raw.endsWith('\\n')) raw += '\\n';\n\nconst cMatch = raw.match(/shared:\\n\\s+constraints:\\n((?:\\s+-\\s+\"[^\"]*\"\\n)+)/);\nconst constraints = cMatch\n  ? [...cMatch[1].matchAll(/\"([^\"]+)\"/g)].map(m => m[1])\n  : [];\nconst cBlock = constraints.length\n  ? '\\n\\nConstraints:\\n' + constraints.map(c => '- ' + c).join('\\n')\n  : '';\n\nfunction block(yaml, section, key) {\n  const re = new RegExp(section + ':[\\\\s\\\\S]*?\\\\n  ' + key + ': \\\\|\\\\n((?:    .*\\\\n|\\\\n)*)');\n  const m = yaml.match(re);\n  if (!m) return '';\n  return m[1].replace(/^    /gm, '').trimEnd();\n}\n\nconst explainer_system = block(raw, 'explainer', 'system') + cBlock;\nconst explainer_user_template = block(raw, 'explainer', 'user_template');\nconst mermaid_system = block(raw, 'mermaid', 'system') + cBlock;\nconst mermaid_user_template = block(raw, 'mermaid', 'user_template');\nconst chat_system = block(raw, 'chat', 'system') + cBlock;\nconst chat_user_template = block(raw, 'chat', 'user_template');\n\nreturn [{\n  json: {\n    explainer_system,\n    explainer_user_template,\n    mermaid_system,\n    mermaid_user_template,\n    chat_system,\n    chat_user_template,\n  },\n}];"
+        "jsCode": "const binaryKey = $input.first().binary?.promptFile ? 'promptFile' : 'data';\nconst buf = await this.helpers.getBinaryDataBuffer(0, binaryKey);\nlet raw = buf.toString('utf8').replace(/\\r\\n?/g, '\\n');\nif (!raw.endsWith('\\n')) raw += '\\n';\n\nconst cMatch = raw.match(/shared:\\n\\s+constraints:\\n((?:\\s+-\\s+\"[^\"]*\"\\n)+)/);\nconst constraints = cMatch\n  ? [...cMatch[1].matchAll(/\"([^\"]+)\"/g)].map(m => m[1])\n  : [];\nconst cBlock = constraints.length\n  ? '\\n\\nConstraints:\\n' + constraints.map(c => '- ' + c).join('\\n')\n  : '';\n\nfunction block(yaml, section, key) {\n  const re = new RegExp(section + ':[\\\\s\\\\S]*?\\\\n  ' + key + ': \\\\|\\\\n((?:    .*\\\\n|\\\\n)*)');\n  const m = yaml.match(re);\n  if (!m) return '';\n  return m[1].replace(/^    /gm, '').trimEnd();\n}\n\nfunction levelSystem(yaml, agent, level) {\n  const re = new RegExp(\n    agent + ':[\\\\s\\\\S]*?levels:[\\\\s\\\\S]*?\\\\n    [\\'\"]?' + level + '[\\'\"]?:\\\\n      system: \\\\|\\\\n((?:        .*\\\\n|\\\\n)*)'\n  );\n  const m = yaml.match(re);\n  if (!m) return '';\n  return m[1].replace(/^        /gm, '').trimEnd();\n}\n\n// Extract all 10 per-level system prompts for explainer and chat.\n// Level selection happens in NormalizeInput (after merge with webhook),\n// where the level value from the request body is available.\nconst explainer_systems = {};\nconst chat_systems = {};\nfor (let lvl = 1; lvl <= 10; lvl++) {\n  const key = String(lvl);\n  explainer_systems[key] = (levelSystem(raw, 'explainer', key) || '') + cBlock;\n  chat_systems[key] = (levelSystem(raw, 'chat', key) || '') + cBlock;\n}\n\nconst explainer_user_template = block(raw, 'explainer', 'user_template');\nconst mermaid_system = block(raw, 'mermaid', 'system') + cBlock;\nconst mermaid_user_template = block(raw, 'mermaid', 'user_template');\nconst chat_user_template = block(raw, 'chat', 'user_template');\n\nreturn [{\n  json: {\n    explainer_systems,\n    explainer_user_template,\n    mermaid_system,\n    mermaid_user_template,\n    chat_systems,\n    chat_user_template,\n  },\n}];"
       },
       "id": "e70138a1-c0f7-440d-a179-bbdc1338d51e",
       "name": "ParsePromptsYaml",
@@ -90,7 +90,7 @@
             },
             {
               "name": "explainer_system",
-              "stringValue": "={{ String($json.explainer_system ?? '') }}"
+              "stringValue": "={{ String(($json.explainer_systems ?? {})[$json.body?.level ?? '5'] ?? '') }}"
             },
             {
               "name": "explainer_user_template",
@@ -106,7 +106,7 @@
             },
             {
               "name": "chat_system",
-              "stringValue": "={{ String($json.chat_system ?? '') }}"
+              "stringValue": "={{ String(($json.chat_systems ?? {})[$json.body?.level ?? '5'] ?? '') }}"
             },
             {
               "name": "chat_user_template",
@@ -302,7 +302,7 @@
         },
         "sendBody": true,
         "specifyBody": "json",
-        "jsonBody": "={{ { messages: [ { role: \"system\", content: $json.mermaid_system }, { role: \"user\", content: $json.mermaid_user_template.replace('{paper_excerpt}', $json.paper_excerpt).replace('{topics}', $json.topics) } ], temperature: 0.3, max_completion_tokens: 900 } }}",
+        "jsonBody": "={{ { messages: [ { role: \"system\", content: $json.mermaid_system }, { role: \"user\", content: $json.mermaid_user_template.replace('{paper_excerpt}', $json.paper_excerpt).replace('{topics}', $json.topics).replace('{level}', $json.level) } ], temperature: 0.3, max_completion_tokens: 900 } }}",
         "options": {}
       },
       "id": "21b23dec-878a-48e6-855c-4f341b08f640",
