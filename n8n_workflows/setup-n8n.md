@@ -25,9 +25,10 @@ Create one credential in n8n:
 - Header name: `api-key`
 - Header value: your Azure OpenAI API key
 
-Then open both nodes and select that credential:
+Then open each node and select that credential:
 - `ExplainerAgent`
 - `MermaidAgent`
+- `ChatAgent`
 
 ### 4) Publish and activate
 
@@ -41,11 +42,9 @@ Prompt source of truth lives in [`prompts.yaml`](prompts.yaml). The workflow rea
 
 1. Edit prompt content in `n8n_workflows/prompts.yaml`.
 2. Trigger a webhook request (test or production URL).
-3. The workflow reads `/data/prompts.yaml`, parses prompt sections, and uses them for `ExplainerAgent` and `MermaidAgent`.
+3. The workflow reads `/data/prompts.yaml`, parses prompt sections, and uses them for `ExplainerAgent`, `MermaidAgent`, and `ChatAgent`.
 
 No workflow recompile or JSON re-import is required for prompt-only changes.
-
-The compiler updates only prompt text fields in `ExplainerAgent` and `MermaidAgent`.
 
 ## API Contract (Frontend -> n8n)
 
@@ -53,7 +52,9 @@ The compiler updates only prompt text fields in `ExplainerAgent` and `MermaidAge
 - **URL:** `http://localhost:5678/webhook/arpx/orchestrate`
 - **Header:** `Content-Type: application/json`
 
-### Request body
+### Stage: `explain` (default)
+
+Request body:
 
 ```json
 {
@@ -66,11 +67,11 @@ The compiler updates only prompt text fields in `ExplainerAgent` and `MermaidAge
 
 Field notes:
 - `paper_excerpt` (string): source text to explain.
-- `level` (number): 1 to 10, where 1 is beginner and 10 is expert.
+- `level` (number): 1–10, where 1 is beginner and 10 is expert.
 - `topics` (array): topic labels used as extra context.
-- `stage` (string): use `explain` for normal flow, `ping` for health checks.
+- `stage` (string): `"explain"` is the default; omitting it also routes here.
 
-### Response body (normal flow)
+Response body:
 
 ```json
 {
@@ -82,6 +83,55 @@ Field notes:
   }
 }
 ```
+
+### Stage: `chat`
+
+Used to ask follow-up questions about the paper. The frontend is responsible for maintaining conversation history and sending it back on every request.
+
+Request body:
+
+```json
+{
+  "stage": "chat",
+  "paper_excerpt": "Text chunks from Weaviate",
+  "level": 3,
+  "query": "What does the attention mechanism actually do here?",
+  "history": [
+    { "role": "user", "content": "Can you explain the model architecture?" },
+    { "role": "assistant", "content": "The model uses a transformer-based..." }
+  ]
+}
+```
+
+Field notes:
+- `stage` (string): must be `"chat"`.
+- `paper_excerpt` (string): same excerpt used in the current session — injected into the chat user template.
+- `level` (number): 1–10 — selects the level-specific chat system prompt and is injected into the user template.
+- `query` (string): the user's current question.
+- `history` (array): all previous turns in the conversation, each as `{ "role": "user"|"assistant", "content": "..." }`. The workflow inserts this between the system prompt and the current user message, giving the model full conversation context. Send an empty array `[]` for the first message.
+
+How the workflow builds the message list sent to the model:
+
+```
+[system prompt (level-specific)]
+...history (previous turns, oldest first)
+[user: rendered chat template with paper_excerpt, level, and query filled in]
+```
+
+Response body:
+
+```json
+{
+  "text_explanation": "The attention mechanism computes...",
+  "mermaid_code": "",
+  "debug": {
+    "stage": "chat",
+    "route": "orchestrate"
+  }
+}
+```
+
+Note: `mermaid_code` is always an empty string for chat responses. After receiving a response the frontend should append `{ "role": "user", "content": query }` and `{ "role": "assistant", "content": text_explanation }` to its local history array before the next request.
 
 ## Health Check
 
