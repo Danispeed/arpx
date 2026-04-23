@@ -86,12 +86,13 @@ if st.session_state.analyzed:
     )
     
     if st.button("Explain Paper"):
-        result = explain_paper(level, st.session_state.topics)
-        
+        with st.spinner("Generating explanation (this may take up to 2 minutes for large papers)..."):
+            result = explain_paper(level, st.session_state.topics)
+
         st.session_state.explanation = result
         st.session_state.explained = True
         st.session_state.level = level
-        
+
         save_explanation(st.session_state.topics, level, result)
     
 if st.session_state.explained:

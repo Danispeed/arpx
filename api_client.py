@@ -17,7 +17,7 @@ def call_orchestrator(stage, paper_excerpt, level, topics):
         response = requests.post(
             N8N_url,
             json=payload,
-            timeout=30
+            timeout=300
         )
         
         # Checks the response code and throws an error is something went wrong
