@@ -2,22 +2,22 @@ from agents.retriever import index_papers, retrieve_chunks
 from agents.analyzer import find_topics
 from api_client import call_orchestrator
 
-def analyze_paper(paper):    
+def analyze_paper(paper, chat_id):    
     # Index paper (should only happen once)
-    index_papers(paper)
+    index_papers(paper, chat_id)
     
     # Probably need to be modified
     query = "What are the main topics of this research paper?"
     
     # Retrieve relevant chunks
-    topic_chunks = retrieve_chunks(query)
+    topic_chunks = retrieve_chunks(query, chat_id)
     
     # Send to the explainer agent the relevant chunks + query
     topics = find_topics(topic_chunks, query) 
     
     return topics
 
-def explain_paper(level, topics):
+def explain_paper(level, topics, chat_id):
     # Health check
     ping = call_orchestrator("ping", None, None, None)
     
@@ -28,7 +28,7 @@ def explain_paper(level, topics):
         }
     
     query = "Explain the main ideas of this research paper"
-    explain_chunks = retrieve_chunks(query)
+    explain_chunks = retrieve_chunks(query, chat_id)
     paper_excerpt = "\n\n".join(explain_chunks)
     
     result = call_orchestrator("explain", paper_excerpt, level, topics)
