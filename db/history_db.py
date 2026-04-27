@@ -32,6 +32,16 @@ def init_db():
                        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
                     )
                 """)
+    
+    cursor.execute("""
+                   CREATE TABLE IF NOT EXISTS Messages (
+                       id INTEGER PRIMARY KEY AUTOINCREMENT,
+                       explanation_id INTEGER,
+                       role TEXT,
+                       content TEXT,
+                       created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+                   )
+                   """)
 
     connection.commit()
     connection.close()
@@ -83,7 +93,19 @@ def update_explanation(explanation_id, level=None, result=None):
     
     connection.commit()
     connection.close()
-
+    
+def save_message(explanation_id, message_content, role):
+    connection = sqlite3.connect(DB_PATH)
+    cursor = connection.cursor()
+    
+    cursor.execute("""
+                   INSERT INTO Messages (explanation_id, role, content)
+                   VALUES(?, ?, ?)
+                """, (explanation_id, role, message_content))
+    
+    connection.commit()
+    connection.close()
+    
 
 def load_history():
     connection = sqlite3.connect(DB_PATH)
@@ -98,9 +120,41 @@ def load_history():
     rows = cursor.fetchall()
     connection.close()
     
-    return rows
+    history = []
+    
+    for row in rows:
+        explanation_id = row[0]
+        
+        history.append({
+            "id": explanation_id,
+            "chat_id": row[1],
+            "title": row[2],
+            "topics": row[3],
+            "level": row[4],
+            "text_explanation": row[5],
+            "mermaid_code": row[6],
+            "created_at": row[7],
+            "messages": load_messages(explanation_id)
+        })
+    
+    return history
 
-
+def load_messages(explanation_id):
+    connection = sqlite3.connect(DB_PATH)
+    cursor = connection.cursor()
+    
+    cursor.execute("""
+                   SELECT role, content
+                   FROM Messages
+                   WHERE explanation_id = ?
+                   ORDER BY created_at ASC
+            """, (explanation_id,))
+    
+    rows = cursor.fetchall()
+    connection.close()
+    
+    return [{"role": r, "content": c} for r, c in rows]
+    
 def generate_title(topics):
     print("Topics:", topics)
     

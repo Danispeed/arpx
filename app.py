@@ -1,7 +1,7 @@
 import streamlit as st
-from agents.supervisor import analyze_paper, explain_paper
+from agents.supervisor import analyze_paper, explain_paper, generate_message_response
 import streamlit_mermaid as stmd
-from db.history_db import init_db, save_explanation, load_history, update_explanation
+from db.history_db import init_db, save_explanation, load_history, update_explanation, save_message
 import uuid
 
 # State (since every user interaction reruns the entire script from top to bottom)
@@ -29,6 +29,9 @@ if "chat_id" not in st.session_state:
 if "explanation_id" not in st.session_state:
     st.session_state.explanation_id = None
 
+if "chat_messages" not in st.session_state:
+    st.session_state.chat_messages = []
+
 
 init_db()
 
@@ -40,7 +43,14 @@ st.sidebar.title("History")
 history = load_history()
 
 for item in history:
-    explanation_id, chat_id, title, topics, level, text, mermaid, created_at = item
+    explanation_id = item["id"]
+    chat_id = item["chat_id"]
+    title = item["title"]
+    topics = item["topics"]
+    level = item["level"]
+    text = item["text_explanation"]
+    mermaid = item["mermaid_code"]
+    messages = item["messages"]
     
     if st.sidebar.button(f"{title}", key=f"history_{explanation_id}"):
         st.session_state.explanation_id = explanation_id
@@ -53,16 +63,18 @@ for item in history:
         if level:
             st.session_state.level = level
         
-        if text and mermaid:
+        if text and not text.startswith("Error"):
             st.session_state.explanation = {
                 "text_explanation": text,
                 "mermaid_code": mermaid
             }
             st.session_state.explained = True
+            st.session_state.chat_messages = messages    
         
         else:
             st.session_state.explanation = None
             st.session_state.explained = False
+            st.session_state.chat_messages = []
 
 if st.sidebar.button("New Chat"):
     st.session_state.analyzed = False
@@ -74,6 +86,7 @@ if st.sidebar.button("New Chat"):
     
     st.session_state.chat_id = str(uuid.uuid4())
     st.session_state.explanation_id = None
+    st.session_state.chat_messages = []
     
     st.rerun()
         
@@ -107,15 +120,26 @@ if st.session_state.analyzed:
     )
     
     update_explanation(st.session_state.explanation_id, level, None)
+    st.session_state.level = level
     
     if st.button("Explain Paper"):
-        result = explain_paper(level, st.session_state.topics, st.session_state.chat_id)
-        
-        st.session_state.explanation = result
-        st.session_state.explained = True
-        st.session_state.level = level
-        
-        update_explanation(st.session_state.explanation_id, None, result)
+        with st.spinner("Generating explanation (this may take up to 2 minutes for large papers)..."):
+            result = explain_paper(level, st.session_state.topics, st.session_state.chat_id)
+            
+            text = result.get("text_explanation")
+            
+            if text and not text.startswith("Error"):
+                st.session_state.explanation = result
+                st.session_state.explained = True
+            
+            else:
+                st.session_state.explanation = None
+                st.session_state.explained = False
+                st.session_state.chat_messages = []
+                st.markdown(text)
+
+            
+            update_explanation(st.session_state.explanation_id, None, result)
     
 if st.session_state.explained:
     st.subheader("Explanation")
@@ -132,3 +156,42 @@ if st.session_state.explained:
         mermaid_code = result.get("mermaid_code", "")
         if mermaid_code:
             stmd.st_mermaid(mermaid_code)
+            
+        st.subheader("Ask follow-up questions")
+        
+        # Show previous messages
+        for message in st.session_state.chat_messages:
+            with st.chat_message(message["role"]):
+                st.write(message["content"])
+        
+        user_input = st.chat_input("Ask something about the paper and/or the explanation...")
+        
+        if user_input:
+            # First: save the user message
+            save_message(st.session_state.explanation_id, user_input, "user")
+            
+            result = generate_message_response(
+                user_input,
+                st.session_state.level,
+                st.session_state.chat_id,
+                st.session_state.chat_messages
+            )
+            
+            response_text = result.get("text_explanation")
+            
+            # Save assistant message
+            save_message(st.session_state.explanation_id, response_text, "assistant")
+            
+            # Update local state
+            st.session_state.chat_messages.append({
+                "role": "user",
+                "content": user_input
+            })
+            
+            st.session_state.chat_messages.append({
+                "role": "assistant",
+                "content": response_text
+            })
+            
+            st.rerun()
+            

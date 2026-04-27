@@ -19,7 +19,7 @@ def analyze_paper(paper, chat_id):
 
 def explain_paper(level, topics, chat_id):
     # Health check
-    ping = call_orchestrator("ping", None, None, None)
+    ping = call_orchestrator("ping", None, None, None, None, None)
     
     if not ping or ping.get("text_explanation") != "pong":
         return {
@@ -31,7 +31,7 @@ def explain_paper(level, topics, chat_id):
     explain_chunks = retrieve_chunks(query, chat_id)
     paper_excerpt = "\n\n".join(explain_chunks)
     
-    result = call_orchestrator("explain", paper_excerpt, level, topics)
+    result = call_orchestrator("explain", paper_excerpt, level, topics, None, None)
     
     if not result:
         return {
@@ -40,3 +40,26 @@ def explain_paper(level, topics, chat_id):
         }
     
     return result
+
+def generate_message_response(question, level, chat_id, history):
+    ping = call_orchestrator("ping", None, None, None, None, None)
+    
+    if not ping or ping.get("text_explanation") != "pong":
+        return {
+            "text_explanation": "Error Backend (n8n) is not reachable.",
+            "mermaid_code": ""
+        }
+    
+    relevant_chunks = retrieve_chunks(question, chat_id)
+    paper_excerpt = "\n\n".join(relevant_chunks)
+    
+    result = call_orchestrator("chat", paper_excerpt, level, None, question, history)
+    
+    if not result:
+        return {
+            "text_explanation": "Error: Failed to generate response",
+            "mermaid_code": ""
+        }
+    
+    return result
+    

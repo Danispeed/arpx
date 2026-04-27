@@ -3,7 +3,7 @@ import os
 
 N8N_url = os.getenv("N8N_URL")
 
-def call_orchestrator(stage, paper_excerpt, level, topics):
+def call_orchestrator(stage, paper_excerpt, level, topics, query, history):
     payload = {"stage": stage}
     
     if stage == "explain":
@@ -11,6 +11,14 @@ def call_orchestrator(stage, paper_excerpt, level, topics):
             "paper_excerpt": paper_excerpt,
             "level": level,
             "topics": topics,
+        })
+    
+    elif stage == "chat":
+        payload.update({
+            "paper_excerpt": paper_excerpt,
+            "level": level,
+            "query": query,
+            "history": history
         })
     
     try:
