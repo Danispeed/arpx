@@ -105,7 +105,7 @@ Request body:
 
 Field notes:
 - `stage` (string): must be `"chat"`.
-- `paper_excerpt` (string): same excerpt used in the current session — injected into the chat user template.
+- `paper_excerpt` (string): new, dynamically retrieved text chunks from Weaviate. The frontend must perform a new similarity search based on the user's current 'query' and send the most relevant chunks here.
 - `level` (number): 1–10 — selects the level-specific chat system prompt and is injected into the user template.
 - `query` (string): the user's current question.
 - `history` (array): all previous turns in the conversation, each as `{ "role": "user"|"assistant", "content": "..." }`. The workflow inserts this between the system prompt and the current user message, giving the model full conversation context. Send an empty array `[]` for the first message.
