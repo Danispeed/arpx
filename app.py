@@ -59,6 +59,10 @@ for item in history:
                 "mermaid_code": mermaid
             }
             st.session_state.explained = True
+        
+        else:
+            st.session_state.explanation = None
+            st.session_state.explained = False
 
 if st.sidebar.button("New Chat"):
     st.session_state.analyzed = False
