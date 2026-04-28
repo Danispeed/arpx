@@ -1,5 +1,6 @@
 import streamlit as st
 from agents.supervisor import analyze_paper, explain_paper, generate_message_response
+from rag.weaviate_db import clear
 import streamlit_mermaid as stmd
 from db.history_db import init_db, save_explanation, load_history, update_explanation, save_message
 import uuid
@@ -34,6 +35,11 @@ if "chat_messages" not in st.session_state:
 
 
 init_db()
+
+# Only for testing. Clear weaviate database for each run
+if "weaviate_db_cleared" not in st.session_state:
+    clear()
+    st.session_state.weaviate_db_cleared = True
 
 st.title("ARPX - Adaptive Research Paper Explainer")
 st.write("Upload a research paper and get a tailored explanation!")
@@ -166,7 +172,7 @@ if st.session_state.explained:
         
         user_input = st.chat_input("Ask something about the paper and/or the explanation...")
         
-        if user_input:
+        if user_input:       
             # First: save the user message
             save_message(st.session_state.explanation_id, user_input, "user")
             
