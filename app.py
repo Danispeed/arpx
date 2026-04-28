@@ -1,5 +1,6 @@
 import streamlit as st
 from agents.supervisor import analyze_paper, explain_paper, generate_message_response
+from rag.utils import find_num_references
 from rag.weaviate_db import clear
 import streamlit_mermaid as stmd
 from db.history_db import init_db, save_explanation, load_history, update_explanation, save_message
@@ -32,8 +33,7 @@ if "explanation_id" not in st.session_state:
 
 if "chat_messages" not in st.session_state:
     st.session_state.chat_messages = []
-
-
+    
 init_db()
 
 # Only for testing. Clear weaviate database for each run
@@ -104,11 +104,26 @@ if not st.session_state.analyzed:
 
 # Only show analyze button when a PDF is uploaded
 if uploaded_file is not None and not st.session_state.analyzed:
+    num_references = find_num_references(uploaded_file)
+    
+    st.write(f"Found {num_references} references")
+    
+    selected_references = st.number_input(
+        "Select number of references to index",
+        min_value=0,
+        max_value=num_references,
+        value=min(5, num_references)
+    )
+        
     if st.button("Analyze Paper"):
-        topics = analyze_paper(uploaded_file, st.session_state.chat_id)
-        st.session_state.topics = topics
-        st.session_state.analyzed = True
-        st.session_state.explanation_id = save_explanation(st.session_state.chat_id, topics)
+        with st.spinner("Analyzing paper, extracting topics, and indexing references..."):
+            uploaded_file.seek(0)   # Reset pointer
+            topics = analyze_paper(uploaded_file, st.session_state.chat_id, selected_references)
+            
+            st.session_state.topics = topics
+            st.session_state.analyzed = True
+            st.session_state.explanation_id = save_explanation(st.session_state.chat_id, topics)
+            st.rerun()
 
 # Show topics + slider
 if st.session_state.analyzed:

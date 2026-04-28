@@ -2,9 +2,9 @@ from agents.retriever import index_papers, retrieve_chunks
 from agents.analyzer import find_topics
 from api_client import call_orchestrator
 
-def analyze_paper(paper, chat_id):    
+def analyze_paper(paper, chat_id, num_references):    
     # Index paper (should only happen once)
-    index_papers(paper, chat_id)
+    index_papers(paper, chat_id, num_references)
     
     # Probably need to be modified
     query = "What are the main topics of this research paper?"

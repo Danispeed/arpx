@@ -7,7 +7,7 @@ import requests
 import io
 
 # Index both the main paper and the referenced papers
-def index_papers(paper, chat_id):
+def index_papers(paper, chat_id, num_refernces):
     # Begin with main paper
     # Extract text
     text = extract_text_from_pdf(paper)  
@@ -25,7 +25,7 @@ def index_papers(paper, chat_id):
     store_chunks(chunks, embeddings, "main", chat_id)
     
     # Referenced papers
-    references = extract_references(text)
+    references = extract_references(text, num_refernces)
     
     for reference in references:
         data = fetch_paper_data(reference)
