@@ -1,6 +1,14 @@
 import requests
 import time
 import threading
+import os
+from dotenv import load_dotenv
+
+load_dotenv()
+
+SEMANTIC_SCHOLAR_API_KEY = os.getenv("SEMANTIC_SCHOLAR_API_KEY")
+
+
 
 LAST_REQUEST_TIME = 0
 MIN_INTERVAL = 3
@@ -25,6 +33,11 @@ def fetch_paper_data(query):
         "fields": "title,abstract,openAccessPdf"    # What data we want back
     }
     
+    headers = {}
+    
+    if SEMANTIC_SCHOLAR_API_KEY:
+        headers["x-api-key"] = SEMANTIC_SCHOLAR_API_KEY
+    
     try:
         print("Trying to send scholar api request for the resource: ", query)
         now = time.time()
@@ -35,7 +48,7 @@ def fetch_paper_data(query):
         
         print("Sending request to Semantic Scholar")
         LAST_REQUEST_TIME = time.time()
-        response = safe_request(url, parameters)
+        response = safe_request(url, parameters, headers)
         
         if response == None:
             print("All retries failed")
@@ -69,9 +82,9 @@ def fetch_paper_data(query):
         print("Semantic Scholar error:", e)
         return None
 
-def safe_request(url, params, retries=3):
+def safe_request(url, params, headers, retries=3):
     for attempt in range(retries):
-        response = requests.get(url, params=params, timeout=5)
+        response = requests.get(url, params=params, headers=headers, timeout=5)
         
         if response.status_code == 200:
             return response

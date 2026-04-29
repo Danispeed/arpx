@@ -13,8 +13,49 @@ def extract_text_from_pdf(pdf_document):
     
     return text
 
+def find_num_references(pdf_document):
+    text = extract_text_from_pdf(pdf_document)
+    
+    parts = re.split(r"\n\s*(References|REFERENCES)\s*\n", text)
+    
+    references_text = parts[-1]
+    
+    # Split into lines
+    lines = references_text.split("\n")
+    
+    references = []
+    current_reference = ""
+    
+    for line in lines:
+        line = line.strip()
+        
+        # Skip empty lines
+        if not line:
+            continue
+        
+        # Line start with number (e.g., [1]). Thus it is a new reference
+        if re.match(r"^\[\d+\]", line):
+            if current_reference:
+                # Save the old reference
+                references.append(current_reference.strip())
+            
+            current_reference = line
+        else:
+            current_reference += " " + line
+    
+    if current_reference:
+        references.append(current_reference.strip())
+    
+    filtered = []
+    for reference in references:
+        reference = clean_reference(reference)
+        if is_likely_paper(reference):
+            filtered.append(reference)
+    
+    return len(references)
+
 # Extract references from Reference section from paper text
-def extract_references(text):
+def extract_references(text, num_references):
     # Find reference section
     parts = re.split(r"\n\s*(References|REFERENCES)\s*\n", text)
     
@@ -66,7 +107,7 @@ def extract_references(text):
             
     
     # Limit the number of references (can also be changed later, look at how 10 works first)
-    return filtered[:3]
+    return filtered[:num_references]
 
 def split_into_sentences(text):
     # Split into sentences using regex
