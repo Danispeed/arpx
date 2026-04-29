@@ -286,6 +286,10 @@ def cmd_compare_models(args) -> None:
         safe_model = model.replace("/", "_").replace(":", "_")
         _save_csv(results, f"eval_{safe_model}_{ts}.csv")
 
+        # Also save JSON report with full explanations for downstream tools
+        # (qualitative.py, judge_agreement.py)
+        _save_report(results, summary)
+
     if not all_results:
         print("No results collected.")
         sys.exit(1)

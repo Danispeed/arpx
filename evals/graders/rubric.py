@@ -16,10 +16,11 @@ import json
 import os
 import re
 
+import yaml
 from openai import AzureOpenAI
 from tenacity import retry, stop_after_attempt, wait_exponential
 
-from evals.config import AZURE_API_VERSION, AZURE_ENDPOINT, AZURE_KEY, CACHE_DIR, JUDGE_MODEL
+from evals.config import AZURE_API_VERSION, AZURE_ENDPOINT, AZURE_KEY, CACHE_DIR, JUDGE_MODEL, PROMPTS_PATH
 
 _JUDGE_CACHE = os.path.join(CACHE_DIR, "judge")
 
@@ -29,18 +30,16 @@ _client = AzureOpenAI(
     azure_endpoint=AZURE_ENDPOINT or None,
 )
 
-_LEVEL_CRITERIA = {
-    1: "No technical terms; everyday analogies; problem stated first; absolutely no equations or jargon.",
-    2: "At most 1-2 defined terms with immediate plain definitions; very simple analogies; no equations.",
-    3: "Up to 5 defined terms, each defined on first use; no equations; analogies still present.",
-    4: "Standard field vocabulary; mechanism explained with intuition first; at most one simple equation.",
-    5: "Technical vocabulary; actual mechanism explained; key equations with each symbol defined; covers assumptions and main result.",
-    6: "Formal technical language; equations in native form; mentions assumptions and limitations; brief related-work comparison.",
-    7: "No need to define standard domain terms; multiple equations; explicit tradeoffs; some mention of open questions.",
-    8: "Compact technical language; focuses on novelty vs prior work; formal statements; brief limitations section.",
-    9: "Peer-level discourse; full formal notation; emphasis on open questions and failure modes; novel contribution vs prior art.",
-    10: "Domain-specialist precision; questions core assumptions; full formal treatment; failure modes and open problems prominent.",
-}
+
+def _load_level_criteria() -> dict:
+    """Load level criteria from prompts.yaml. Single source of truth shared with explainer."""
+    with open(PROMPTS_PATH) as f:
+        data = yaml.safe_load(f)
+    raw = data.get("shared", {}).get("level_criteria", {})
+    return {int(k): v for k, v in raw.items()}
+
+
+_LEVEL_CRITERIA = _load_level_criteria()
 
 _JUDGE_SYSTEM = """You are an expert evaluator assessing the quality of an AI-generated research paper explanation.
 Score the explanation on the four dimensions below. Return ONLY a JSON object with integer scores and brief rationale strings.

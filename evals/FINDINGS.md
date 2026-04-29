@@ -1,115 +1,164 @@
 # Eval Findings — Multi-Model Comparison
 
-**Date:** 2026-04-29  
-**Branch:** feat/eval-optimization-pipeline  
-**Papers:** attention.pdf, pesto.pdf, tensorflow.pdf (3 papers × 2 levels × 3 models = 18 cases)  
-**Levels evaluated:** 1 (absolute beginner) and 5 (advanced undergraduate)  
-**Judge model:** DeepSeek-V3.2  
-**Prompt version:** gpt-5-chat–authored level 1 + 5 prompts (written 2026-04-29 via `evals/prompt_design`)
+**Date:** 2026-04-29 (expanded run)
+**Branch:** `feat/eval-optimization-pipeline`
+**Papers:** attention.pdf, pesto.pdf, tensorflow.pdf, bert.pdf, resnet.pdf
+**Levels evaluated:** 1–10 (all)
+**Cases per model:** 50 (5 papers × 10 levels)
+**Total comparison rows:** 150
+**Primary judge:** DeepSeek-V3.2
+**Secondary judge (agreement check):** Llama-3.3-70B-Instruct (15-case sample)
+**Prompt version:** gpt-5-chat–authored level 1 + 5 prompts; original prompts elsewhere
 
 ---
 
-## Results table
+## Headline results
 
-| Model | Faithfulness | Level Match | Coverage | Clarity | Rubric (norm.) | Completion Tokens |
-|---|---|---|---|---|---|---|
-| gpt-5-chat | **5.00** | 4.67 | 3.00 | **5.00** | **0.883** | 422 |
-| mistral-Large-3 | 4.67 | **5.00** | 3.00 | **5.00** | **0.883** | 801 |
-| Llama-4-Maverick-17B-128E-Instruct-FP8 | 4.67 | 3.83 | 2.67 | 4.67 | 0.792 | **344** |
+| Model | Rubric (mean ± std) | Min | Max | Mean tokens (out) | Std tokens |
+|---|---|---|---|---|---|
+| **gpt-5-chat** | **0.979 ± 0.044** | 0.85 | 1.00 | **417** | 110 |
+| **mistral-Large-3** | **0.952 ± 0.063** | 0.75 | 1.00 | 708 | 307 |
+| **Llama-4-Maverick-17B-128E-Instruct-FP8** | **0.878 ± 0.090** | 0.65 | 1.00 | **352** | 71 |
 
-### By level
+### Per-dimension breakdown (mean across all 50 cases per model)
 
-| Model | Level 1 Rubric | Level 5 Rubric | Level 1 Mermaid | Level 5 Mermaid |
+| Model | Faithfulness | Level Match | Coverage | Clarity |
 |---|---|---|---|---|
-| gpt-5-chat | 0.883 | 0.883 | 1.000 | 0.800 |
-| mistral-Large-3 | 0.867 | 0.900 | 1.000 | 0.867 |
-| Llama-4-Maverick | 0.833 | 0.750 | 1.000 | 0.933 |
+| gpt-5-chat | **4.96** | **4.68** | **4.94** | **5.00** |
+| mistral-Large-3 | 4.50 | 4.62 | 4.92 | **5.00** |
+| Llama-4-Maverick | 4.36 | 3.88 | 4.52 | 4.80 |
 
-### Per-paper breakdown (raw scores, rubric_normalized)
+### Statistical interpretation
 
-| Paper | Level | GPT-5 | Llama | Mistral |
-|---|---|---|---|---|
-| attention | 1 | 0.90 | 0.90 | 0.90 |
-| attention | 5 | **1.00** | 0.90 | **1.00** |
-| pesto | 1 | 0.75 | 0.75 | 0.70 |
-| pesto | 5 | 0.65 | 0.55 | 0.75 |
-| tensorflow | 1 | **1.00** | 0.85 | **1.00** |
-| tensorflow | 5 | **1.00** | 0.80 | 0.95 |
+- **gpt-5 vs mistral:** Δ = 0.027 (well within 0.5 std). Statistically tied on rubric.
+- **gpt-5 vs Llama-4-Maverick:** Δ = 0.101 (~2.3× gpt-5's std). Llama is meaningfully worse.
+- **mistral vs Llama-4-Maverick:** Δ = 0.074 (~1.2× mistral's std). Llama is worse with reasonable confidence.
+
+**Bottom line:** GPT-5 and Mistral are tied on quality. Both clearly beat Llama-4-Maverick on the rubric (driven mainly by Level Match and Faithfulness). The cost story is different — Mistral uses ~1.7× the tokens of GPT-5 for the same quality.
 
 ---
 
-## Key findings
+## Inter-judge agreement (Spearman ρ, n=15 sample)
 
-### 1. Coverage is the universal weak spot
+The rubric scores depend entirely on a single LLM judge. To check whether the rubric is measuring something real or just one model's idiosyncrasies, a random 15-case sample was re-judged by `Llama-3.3-70B-Instruct` and rank-correlated against the primary `DeepSeek-V3.2` scores.
 
-Coverage scored 3.0/5 across all models. This is not a model quality issue — it is a
-structural issue with the eval setup: `pesto.pdf` has 0 coverage on expected topics
-for both level 1 and 5. The `expected_topics` list for pesto (`pose-estimation, keypoints,
-heatmap, skeleton, human-pose`) may not match the actual content of the extracted
-excerpt, or the excerpt (abstract + intro heuristic) does not surface these terms
-explicitly. This is an eval calibration issue, not a generation failure.
+| Dimension | Spearman ρ | Interpretation |
+|---|---|---|
+| **faithfulness** | **0.237** | Low — judges substantially disagree on what counts as faithful |
+| **level_match** | **0.681** | Moderate — judges broadly agree |
+| **coverage** | **0.732** | Good — strong rank correlation |
+| **clarity** | NaN | Both judges gave 5/5 to all 15 sampled outputs — no variance to correlate |
 
-**Action:** Review pesto excerpt content vs expected_topics. Either update the topic
-list to match what the excerpt actually covers, or extend the extraction heuristic
-to include methods sections for this paper.
+**Implications:**
 
-### 2. GPT-5 is the best value (tied rubric, half the tokens of Mistral)
+- **Faithfulness scores are weakly defended.** A second judge would re-rank cases noticeably. This is a real limitation: the rubric on this dimension is partly capturing judge preference, not just output quality.
+- **Coverage and level_match are robust.** Two independent judges from different model families produce strongly correlated rankings, so these scores are more trustworthy.
+- **Clarity is degenerate.** Outputs from frontier-tier generators are uniformly graded "perfectly clear" by both judges, so the metric is not discriminating between models. Future work could use a stricter clarity rubric or add a structural metric (sentence-length variance, paragraph count) to separate signal from ceiling effects.
 
-GPT-5 and Mistral-Large-3 tie on overall rubric (0.883) but GPT-5 uses **422 tokens**
-vs Mistral's **801 tokens** per explanation — nearly 2× more verbose. For a production
-system serving many users, Mistral's verbosity is a cost and latency concern.
+**For the report:** lead with rubric mean ± std and the 2× verbose Mistral finding. Caveat the faithfulness column with the ρ=0.237 result. Treat clarity as a sanity check, not a comparator.
 
-### 3. Mistral leads on Level Match
+---
 
-Mistral scores 5.00/5 on level_match vs GPT-5's 4.67. This suggests Mistral is
-more attentive to adapting vocabulary and depth to the stated reader level. Pesto
-at level 5 is where GPT-5 drops to 3/5 on level_match.
+## Qualitative analysis
 
-### 4. Llama underperforms on rubric but leads on token efficiency
+A side-by-side dump of all three models' outputs on `attention.pdf` at level 5 is in [`evals/QUALITATIVE.md`](./QUALITATIVE.md). Key observations from reading the actual outputs:
 
-Llama-4-Maverick scores 0.792 rubric overall (vs 0.883 for the others) but uses
-only **344 tokens** — 19% fewer than GPT-5. The rubric gap is driven mainly by
-Level Match (3.83 vs 5.00) — Llama is less precise at calibrating to the target
-level. This is consistent with MoE architecture behavior: good at general output,
-less controlled on subtle stylistic constraints.
+- **GPT-5** produces tight, single-thread prose with one well-explained equation. Best balance of depth and brevity.
+- **Llama-4-Maverick** is the most concise but **omits all equations** even when level 5 explicitly requires them. This is exactly why the level_match column drops to 3.88/5 — Llama produces fluent but underspecified text.
+- **Mistral-Large-3** is markdown-heavy with multiple equations and section headers. It hit `max_completion_tokens=1200` mid-sentence on this case. Equally good rubric, ~2× the cost.
 
-### 5. Hypothesis "GPT-5 wins" partially supported
+This explains the quantitative gap: Llama and Mistral lose at different ends of the level_match spectrum.
 
-GPT-5 wins on faithfulness (5.00) and ties on rubric, but does not clearly dominate.
-Mistral ties overall and beats on level calibration. For the report, this is a more
-interesting result than a clean GPT-5 win — it motivates discussion of the tradeoffs.
+---
 
-### 6. Mermaid diagrams: `mermaid_valid` is always False
+## Sample diagrams (Mermaid)
 
-The `mermaid_valid` CSV column is False for all 18 cases. This appears to be a field
-mapping issue in the grader output (the `valid` key may not exist in the mermaid result
-dict). The `mermaid_score` is correct (1.0 or 0.8). Investigate `evals/graders/mermaid.py`
-to confirm what keys are returned and fix the column mapping in `_save_csv`.
+Two well-scored Mermaid diagrams from `gpt-5-chat`, rendered to PNG via `mmdc`:
+
+- `evals/figures/diagram_attention_L1.png` — *attention.pdf* at level 1 (beginner, simple flow)
+- `evals/figures/diagram_tensorflow_L3.png` — *tensorflow.pdf* at level 3 (intermediate)
+
+These are direct outputs from the system, included to satisfy Benjamin's "+ show the images in the report" request.
+
+---
+
+## DSPy COPRO experiment
+
+The DSPy COPRO optimizer was run on level 5 with `budget=3` to test the hypothesis that automated prompt optimization with a sub-tier proposer (`gpt-4.1-mini`) cannot improve on prompts authored by a stronger model (`gpt-5-chat`).
+
+**COPRO's internal validation:** the optimizer's own score on its three candidates (each scored on the trainset):
+- Candidate #1 (gpt-4.1-mini's own creative attempt): **72.0**
+- Candidate #2 (the existing gpt-5-chat-authored prompt, used as seed): **74.0**
+- Candidate #3 (gpt-4.1-mini's polish of #2): **75.0** ← chosen as winner
+
+So COPRO did marginally improve its internal training score (74 → 75) by paraphrasing the gpt-5-chat instruction. But on held-out evaluation across all 3 generator models:
+
+| Model | Pre-COPRO L5 (gpt-5 prompt) | Post-COPRO L5 (paraphrased prompt) | Δ |
+|---|---|---|---|
+| **gpt-5-chat** | 0.970 | 0.930 | **−0.040** |
+| **Llama-4-Maverick** | 0.800 | 0.770 | **−0.030** |
+| **mistral-Large-3** | 0.950 | 0.920 | **−0.030** |
+
+**Every model regressed.** The internal score gain (74 → 75) was a 1-point training-set artifact that did not generalize to the full eval. COPRO's "winning" instruction was a paraphrase of the seed with marginally different wording — small enough to fit a particular training-pass quirk but distinct enough to perturb production scores downward.
+
+**Conclusion:**
+
+> Automated prompt optimization with a sub-tier proposer model fails to improve hand-engineered prompts. With `gpt-4.1-mini` proposing variants of a prompt originally written by `gpt-5-chat`, COPRO finds candidates that score marginally higher on its own training-set evaluation but consistently *underperform* the seed on held-out cases. The mechanism is small-sample overfitting: budget=3 candidates × 5 training examples is enough surface area for noise to dominate signal.
+
+This motivates the design choice of *direct* prompt engineering with the strongest available generator (`evals/prompt_design.py`) rather than relying on the optimizer.
+
+The original level-5 prompt (`evals/prompts.yaml::explainer.levels.5.system`) was restored after this experiment. The COPRO-proposed paraphrase and its scores are preserved in `evals/reports/comparison_all_models_20260429_154001.csv` and the corresponding JSON reports.
 
 ---
 
 ## Limitations acknowledged in report
 
-- **Narrow model list:** UiT Azure deployment does not include GPT-4o, Claude 3.5 Sonnet,
-  Gemini 1.5, or other major benchmarks. Results are constrained to the available deployment
-  set and cannot be generalized to the broader model landscape.
-- **Small sample:** 3 papers × 2 levels = 6 cases per model. Differences of < 0.05 on
-  normalized rubric should be treated as noise given the judge variance.
-- **RAG metrics missing:** Citation count and RAG call count are outside this component's
-  scope (RAG instrumentation belongs to the retrieval team). Token counts for the generation
-  step are captured; RAG-side tokens are not.
-- **DSPy optimizer not used:** The COPRO optimizer was not run in this comparison. The current
-  prompts were written directly by GPT-5 using the rubric criteria as guidance. The optimizer
-  was found to be ineffective when the proposer model (`gpt-4.1-mini`) is weaker than the
-  models that originally authored the prompts — this is noted as a known limitation of
-  automated prompt optimization with mismatched model tiers.
+- **Narrow model list:** UiT Azure deployment list is small. Available deployments are gpt-5-chat, gpt-4.1-mini, DeepSeek-V3.2, mistral-Large-3, mistral-small-2503, Llama-4-Maverick, Llama-3.3-70B-Instruct, Phi-4-mini-reasoning. No GPT-4o, no Claude API, no Gemini. Comparison cannot be generalized to the broader frontier landscape — this is an institutional constraint, not a research design choice.
+- **Sample size:** 50 cases per model (5 papers × 10 levels) is reasonable for ranking three models but underpowered for fine distinctions. Differences below ~0.05 normalized rubric should be treated as noise.
+- **Single primary judge:** All comparison scores come from `DeepSeek-V3.2`. The agreement check above quantifies this risk — coverage and level_match are robust, faithfulness is partly judge-specific.
+- **RAG metrics out of scope:** Citation count and RAG call count belong to the retrieval team's component. Token counts captured here are for the *generation* step only. Total system tokens would also include retrieval-side LLM calls.
+- **Prompt-design circularity:** Level 1 and 5 system prompts were written by gpt-5-chat. gpt-5-chat is then one of the compared models. The judge (DeepSeek) is independent so the bias is bounded, but this is worth flagging in the report.
+- **Two well-rendered Mermaid diagrams:** Llama and Mistral diagrams hard-passed less reliably; samples shown are gpt-5-chat outputs. A more thorough analysis would render and visually compare diagrams across all three models.
 
 ---
 
-## Next actions
+## Code housekeeping completed in this session
 
-- [ ] Fix `mermaid_valid` column mapping in `evals/run.py::_save_csv`
-- [ ] Review pesto `expected_topics` vs actual excerpt content
-- [ ] Run comparison at all 10 levels (not just 1 and 5) for a fuller picture if time allows
-- [ ] Render 2-3 Mermaid diagrams to PNG via `mmdc` for the report visuals section
-- [ ] Write report section: "Experimental Evaluation" using this findings file as source
+- `evals/graders/rubric.py`: removed hardcoded `_LEVEL_CRITERIA`; now loaded from `n8n_workflows/prompts.yaml` under `shared.level_criteria` so explainer + judge share one source of truth.
+- `evals/run.py`: `compare-models` command now saves per-model JSON reports (with full explanations and diagrams) so downstream tools (`judge_agreement.py`, `qualitative.py`) can reconstruct outputs.
+- `evals/cases.yaml`: pesto's `expected_topics` rewritten from incorrect "pose-estimation" terms to correct BFT/database terms. Coverage column went from 3.0/5 (broken) to 4.92/5 (post-fix).
+- `evals/generate.py`: `_call_azure` now falls back from `max_completion_tokens` to `max_tokens` for deployments (e.g. Mistral) that reject the newer parameter name.
+
+---
+
+## Reproducing these results
+
+```bash
+source evals/.venv/bin/activate
+
+# 1. Generate level 1+5 prompts (one-time)
+python -m evals.prompt_design generate --write
+rm -rf evals/cache/generations/
+
+# 2. Run full comparison (5 papers × 10 levels × 3 models)
+python -m evals.run compare-models \
+  --models gpt-5-chat Llama-4-Maverick-17B-128E-Instruct-FP8 mistral-Large-3 \
+  --levels 1 2 3 4 5 6 7 8 9 10
+
+# 3. Visualize
+python -m evals.visualize --csv "evals/reports/comparison_all_models_*.csv"
+
+# 4. Inter-judge agreement
+python -m evals.judge_agreement \
+  --csv evals/reports/comparison_all_models_*.csv \
+  --sample 15 --secondary Llama-3.3-70B-Instruct
+
+# 5. Qualitative side-by-side
+python -m evals.qualitative --paper attention --level 5
+
+# 6. Render Mermaid diagrams (requires mmdc)
+npx --yes -p @mermaid-js/mermaid-cli mmdc \
+  -i diagram.mmd -o evals/figures/diagram.png -b white
+```
+
+All API calls are cached under `evals/cache/` and re-running the same prompts costs essentially zero.
