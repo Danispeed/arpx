@@ -2,26 +2,35 @@
 Eval runner.
 
 Usage:
-    python -m evals.run evaluate            # score current prompts.yaml, save report
-    python -m evals.run estimate            # dry-run: predict token/request count
-    python -m evals.run compare --baseline  # compare latest report to baseline.json
+    python -m evals.run evaluate                              # score current prompts.yaml
+    python -m evals.run evaluate --model mistral-Large-3     # override generator model
+    python -m evals.run evaluate --levels 1 5                # restrict to specific levels
+    python -m evals.run estimate                             # dry-run cost estimate
+    python -m evals.run compare-models                       # run all comparison models, save CSV
+    python -m evals.run check-baseline                       # compare latest report to baseline
 """
 
 import argparse
 import asyncio
+import csv
 import json
 import os
 import sys
 from datetime import datetime
 from pathlib import Path
 
-from evals.config import CONCURRENCY, REPORTS_DIR
+from evals.config import CONCURRENCY, GENERATOR_MODEL, REPORTS_DIR
 from evals.dataset import load_eval_cases
 from evals.generate import generate_explanation, generate_mermaid
 from evals.graders import mermaid as mermaid_grader
 from evals.graders import rubric as rubric_grader
 
-_REGRESSION_THRESHOLD = 0.2  # drop in normalised score that counts as regression
+_REGRESSION_THRESHOLD = 0.2
+_COMPARISON_MODELS = [
+    "gpt-5-chat",
+    "Llama-4-Maverick-17B-128E-Instruct-FP8",
+    "mistral-Large-3",
+]
 
 
 def _run_one_case(case: dict) -> dict:
@@ -29,22 +38,25 @@ def _run_one_case(case: dict) -> dict:
     topics = case["expected_topics"]
     level = case["level"]
 
-    explanation = generate_explanation(paper_excerpt, topics, level)
-    diagram = generate_mermaid(paper_excerpt, topics, level)
+    expl = generate_explanation(paper_excerpt, topics, level)
+    diag = generate_mermaid(paper_excerpt, topics, level)
 
     rubric_result = rubric_grader.grade(
         paper_excerpt=paper_excerpt,
-        output=explanation,
+        output=expl["text"],
         level=level,
         expected_topics=topics,
     )
-    mermaid_result = mermaid_grader.grade(diagram)
+    mermaid_result = mermaid_grader.grade(diag["text"])
 
     return {
         "paper": case["paper_path"],
         "level": level,
-        "explanation": explanation,
-        "diagram": diagram,
+        "model": GENERATOR_MODEL,
+        "explanation": expl["text"],
+        "diagram": diag["text"],
+        "prompt_tokens": expl["prompt_tokens"],
+        "completion_tokens": expl["completion_tokens"],
         "rubric": rubric_result,
         "mermaid": mermaid_result,
     }
@@ -98,6 +110,41 @@ def _save_report(results: list[dict], summary: dict) -> str:
     return path
 
 
+def _save_csv(results: list[dict], filename: str) -> str:
+    os.makedirs(REPORTS_DIR, exist_ok=True)
+    path = os.path.join(REPORTS_DIR, filename)
+
+    fieldnames = [
+        "paper", "level", "model",
+        "faithfulness", "level_match", "coverage", "clarity",
+        "rubric_total", "rubric_normalized",
+        "mermaid_valid", "mermaid_score",
+        "prompt_tokens", "completion_tokens",
+    ]
+
+    with open(path, "w", newline="") as f:
+        writer = csv.DictWriter(f, fieldnames=fieldnames)
+        writer.writeheader()
+        for r in results:
+            writer.writerow({
+                "paper": Path(r["paper"]).stem,
+                "level": r["level"],
+                "model": r.get("model", GENERATOR_MODEL),
+                "faithfulness": r["rubric"]["faithfulness"],
+                "level_match": r["rubric"]["level_match"],
+                "coverage": r["rubric"]["coverage"],
+                "clarity": r["rubric"]["clarity"],
+                "rubric_total": r["rubric"]["total"],
+                "rubric_normalized": r["rubric"]["normalized"],
+                "mermaid_valid": r["mermaid"].get("hard_pass", False),
+                "mermaid_score": r["mermaid"]["score"],
+                "prompt_tokens": r.get("prompt_tokens"),
+                "completion_tokens": r.get("completion_tokens"),
+            })
+
+    return path
+
+
 def _load_baseline() -> dict | None:
     path = os.path.join(REPORTS_DIR, "baseline.json")
     if not os.path.exists(path):
@@ -117,7 +164,6 @@ def _print_summary(summary: dict) -> None:
 
 
 def _check_regressions(summary: dict, baseline: dict) -> bool:
-    """Return True if any regression exceeds threshold."""
     regressions = []
     for level, s in summary.items():
         b = baseline.get("summary", {}).get(level)
@@ -145,10 +191,9 @@ def cmd_estimate(args) -> None:
         return
 
     n_cases = len(cases)
-    # Rough token estimates
-    explain_gen_tokens = n_cases * 1500      # ~1500 tokens per explanation call
-    mermaid_gen_tokens = n_cases * 800       # ~800 per diagram
-    judge_tokens = n_cases * 1000            # ~1000 per rubric call (4 dimensions)
+    explain_gen_tokens = n_cases * 1500
+    mermaid_gen_tokens = n_cases * 800
+    judge_tokens = n_cases * 1000
 
     print(f"\nEval estimate ({n_cases} cases, concurrency={CONCURRENCY}):")
     print(f"  Explanation generation: ~{n_cases} calls, ~{explain_gen_tokens:,} tokens")
@@ -159,17 +204,36 @@ def cmd_estimate(args) -> None:
 
 
 def cmd_evaluate(args) -> None:
+    if args.model:
+        os.environ["ARPX_GENERATOR_MODEL"] = args.model
+        # Reload config in generate module so GENERATOR_MODEL picks up the override
+        import evals.config as cfg
+        import evals.generate as gen
+        cfg.GENERATOR_MODEL = args.model
+        gen.GENERATOR_MODEL = args.model
+
     cases = load_eval_cases()
     if not cases:
         print("No cases loaded. Add PDFs to evals/papers/ and configure cases.yaml.")
         sys.exit(1)
 
-    print(f"Running eval on {len(cases)} cases (concurrency={CONCURRENCY})...")
+    if args.levels:
+        cases = [c for c in cases if c["level"] in args.levels]
+        print(f"Filtered to levels {args.levels}: {len(cases)} cases.")
+
+    model = args.model or GENERATOR_MODEL
+    print(f"Running eval on {len(cases)} cases (model={model}, concurrency={CONCURRENCY})...")
     results = asyncio.run(_run_all_async(cases))
     summary = _aggregate(results)
 
     report_path = _save_report(results, summary)
     print(f"Report saved: {report_path}")
+
+    ts = datetime.now().strftime("%Y%m%d_%H%M%S")
+    safe_model = model.replace("/", "_").replace(":", "_")
+    csv_path = _save_csv(results, f"eval_{safe_model}_{ts}.csv")
+    print(f"CSV saved:    {csv_path}")
+
     _print_summary(summary)
 
     baseline = _load_baseline()
@@ -181,7 +245,57 @@ def cmd_evaluate(args) -> None:
         print("No baseline.json found. Copy your first report to evals/reports/baseline.json.")
 
 
-def cmd_compare(args) -> None:
+def cmd_compare_models(args) -> None:
+    """Run eval across multiple models and save a merged comparison CSV."""
+    models = args.models or _COMPARISON_MODELS
+    levels = args.levels or [1, 5]
+
+    all_results = []
+    ts = datetime.now().strftime("%Y%m%d_%H%M%S")
+
+    for model in models:
+        os.environ["ARPX_GENERATOR_MODEL"] = model
+        import evals.config as cfg
+        import evals.generate as gen
+        cfg.GENERATOR_MODEL = model
+        gen.GENERATOR_MODEL = model
+
+        cases = load_eval_cases()
+        if not cases:
+            print("No cases loaded.")
+            sys.exit(1)
+
+        cases = [c for c in cases if c["level"] in levels]
+        print(f"\n[{model}] Running {len(cases)} cases (levels={levels})...")
+
+        try:
+            results = asyncio.run(_run_all_async(cases))
+        except Exception as e:
+            print(f"[{model}] FAILED: {e}")
+            continue
+
+        for r in results:
+            r["model"] = model
+        all_results.extend(results)
+
+        summary = _aggregate(results)
+        print(f"[{model}] Done.")
+        _print_summary(summary)
+
+        # Save per-model CSV immediately so results aren't lost on later failure
+        safe_model = model.replace("/", "_").replace(":", "_")
+        _save_csv(results, f"eval_{safe_model}_{ts}.csv")
+
+    if not all_results:
+        print("No results collected.")
+        sys.exit(1)
+
+    csv_path = _save_csv(all_results, f"comparison_all_models_{ts}.csv")
+    print(f"\nComparison CSV saved: {csv_path}")
+    print(f"Total rows: {len(all_results)}")
+
+
+def cmd_check_baseline(args) -> None:
     reports = sorted(Path(REPORTS_DIR).glob("report_*.json"))
     if len(reports) < 1:
         print("No reports found. Run 'evaluate' first.")
@@ -206,8 +320,16 @@ def main() -> None:
     sub = parser.add_subparsers(dest="command")
 
     sub.add_parser("estimate", help="Dry-run cost estimate")
-    sub.add_parser("evaluate", help="Run full eval and save report")
-    sub.add_parser("compare", help="Compare latest report to baseline")
+
+    eval_p = sub.add_parser("evaluate", help="Run full eval and save report")
+    eval_p.add_argument("--model", help="Override generator model (env: ARPX_GENERATOR_MODEL)")
+    eval_p.add_argument("--levels", type=int, nargs="+", help="Restrict to specific levels (e.g. --levels 1 5)")
+
+    cmp_p = sub.add_parser("compare-models", help="Run eval across multiple models, save merged CSV")
+    cmp_p.add_argument("--models", nargs="+", help=f"Models to compare (default: {_COMPARISON_MODELS})")
+    cmp_p.add_argument("--levels", type=int, nargs="+", default=[1, 5], help="Levels to evaluate (default: 1 5)")
+
+    sub.add_parser("check-baseline", help="Compare latest report to baseline")
 
     args = parser.parse_args()
 
@@ -215,8 +337,10 @@ def main() -> None:
         cmd_estimate(args)
     elif args.command == "evaluate":
         cmd_evaluate(args)
-    elif args.command == "compare":
-        cmd_compare(args)
+    elif args.command == "compare-models":
+        cmd_compare_models(args)
+    elif args.command == "check-baseline":
+        cmd_check_baseline(args)
     else:
         parser.print_help()
 

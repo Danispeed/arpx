@@ -9,7 +9,7 @@ import os
 import time
 
 import yaml
-from openai import AzureOpenAI
+from openai import AzureOpenAI, UnprocessableEntityError
 from tenacity import retry, stop_after_attempt, wait_exponential
 
 from evals.config import (
@@ -54,34 +54,48 @@ def _cache_key(model: str, system: str, user: str, temperature: float) -> str:
 
 
 @retry(stop=stop_after_attempt(5), wait=wait_exponential(multiplier=1, min=2, max=30))
-def _call_azure(system: str, user: str, temperature: float, max_tokens: int) -> str:
-    response = _client.chat.completions.create(
+def _call_azure(system: str, user: str, temperature: float, max_tokens: int) -> dict:
+    kwargs = dict(
         model=GENERATOR_MODEL,
         messages=[{"role": "system", "content": system}, {"role": "user", "content": user}],
         temperature=temperature,
-        max_completion_tokens=max_tokens,
     )
-    return response.choices[0].message.content.strip()
+    try:
+        response = _client.chat.completions.create(**kwargs, max_completion_tokens=max_tokens)
+    except UnprocessableEntityError:
+        # Some deployments (e.g. Mistral) reject max_completion_tokens; fall back to max_tokens
+        response = _client.chat.completions.create(**kwargs, max_tokens=max_tokens)
+    usage = response.usage or {}
+    return {
+        "output": response.choices[0].message.content.strip(),
+        "prompt_tokens": getattr(usage, "prompt_tokens", None),
+        "completion_tokens": getattr(usage, "completion_tokens", None),
+    }
 
 
-def _cached_call(system: str, user: str, temperature: float, max_tokens: int) -> str:
+def _cached_call(system: str, user: str, temperature: float, max_tokens: int) -> dict:
     os.makedirs(_GEN_CACHE, exist_ok=True)
     key = _cache_key(GENERATOR_MODEL, system, user, temperature)
     cache_file = os.path.join(_GEN_CACHE, f"{key}.json")
 
     if os.path.exists(cache_file):
-        with open(cache_file) as f:
-            return json.load(f)["output"]
+        cached = json.load(open(cache_file))
+        return {
+            "output": cached["output"],
+            "prompt_tokens": cached.get("prompt_tokens"),
+            "completion_tokens": cached.get("completion_tokens"),
+        }
 
-    output = _call_azure(system, user, temperature, max_tokens)
+    result = _call_azure(system, user, temperature, max_tokens)
 
     with open(cache_file, "w") as f:
-        json.dump({"output": output}, f)
+        json.dump(result, f)
 
-    return output
+    return result
 
 
-def generate_explanation(paper_excerpt: str, topics: list, level: int) -> str:
+def generate_explanation(paper_excerpt: str, topics: list, level: int) -> dict:
+    """Returns {"text": str, "prompt_tokens": int|None, "completion_tokens": int|None}."""
     prompts = _load_prompts()
     level_data = _get_level_system(prompts, "explainer", level)
     system = (level_data.get("system") or "") + _constraints_block(prompts)
@@ -92,10 +106,12 @@ def generate_explanation(paper_excerpt: str, topics: list, level: int) -> str:
         .replace("{topics}", json.dumps(topics))
         .replace("{level}", str(level))
     )
-    return _cached_call(system, user, temperature=0.5, max_tokens=1200)
+    result = _cached_call(system, user, temperature=0.5, max_tokens=1200)
+    return {"text": result["output"], "prompt_tokens": result["prompt_tokens"], "completion_tokens": result["completion_tokens"]}
 
 
-def generate_mermaid(paper_excerpt: str, topics: list, level: int = 5) -> str:
+def generate_mermaid(paper_excerpt: str, topics: list, level: int = 5) -> dict:
+    """Returns {"text": str, "prompt_tokens": int|None, "completion_tokens": int|None}."""
     prompts = _load_prompts()
     system = (prompts.get("mermaid", {}).get("system") or "") + _constraints_block(prompts)
     template = prompts.get("mermaid", {}).get("user_template", "")
@@ -105,4 +121,5 @@ def generate_mermaid(paper_excerpt: str, topics: list, level: int = 5) -> str:
         .replace("{topics}", json.dumps(topics))
         .replace("{level}", str(level))
     )
-    return _cached_call(system, user, temperature=0.3, max_tokens=900)
+    result = _cached_call(system, user, temperature=0.3, max_tokens=900)
+    return {"text": result["output"], "prompt_tokens": result["prompt_tokens"], "completion_tokens": result["completion_tokens"]}

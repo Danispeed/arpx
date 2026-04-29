@@ -12,18 +12,22 @@ variants back into that file.
 source evals/.venv/bin/activate
 
 # 2. Copy your Azure credentials into the project root .env if not already done
-#    Required vars: AZURE_OPENAI_KEY, AZURE_OPENAI_ENDPOINT, ARPX_JUDGE_MODEL
+#    Required vars: AZURE_OPENAI_KEY, AZURE_OPENAI_ENDPOINT
 
 # 3. Predict cost before spending quota
 python -m evals.run estimate
 
-# 4. Score current prompts.yaml and save a baseline report
-python -m evals.run evaluate
+# 4. Generate purpose-built level 1 + 5 system prompts using gpt-5-chat
+python -m evals.prompt_design generate --write
+rm -rf evals/cache/generations/   # clear cache so new prompts take effect
 
-# 5. Optimize specific levels (replace with levels that scored lowest)
-python -m evals.optimize --levels 1,5,7 --budget 5
+# 5. Run multi-model comparison (levels 1 and 5, 3 models)
+python -m evals.run compare-models --levels 1 5
 
-# 6. Re-score to confirm improvement
+# 6. Visualize results
+python -m evals.visualize --csv "evals/reports/comparison_all_models_*.csv"
+
+# 7. (Optional) Score current prompts.yaml across all levels
 python -m evals.run evaluate
 ```
 
@@ -198,6 +202,70 @@ L9          0.900     0.800    3
 L10         0.983     0.800    3
 overall     0.888     0.860   30
 ```
+
+### `python -m evals.run compare-models [--models M1 M2 ...] [--levels L1 L2 ...]`
+
+Runs the eval across multiple generator models and saves a merged comparison CSV.
+Defaults to levels 1 and 5 and the three configured comparison models.
+Per-model CSVs are saved after each model completes, so a crash on a later model does
+not lose earlier results.
+
+```bash
+# Default: gpt-5-chat, Llama-4-Maverick, mistral-Large-3 at levels 1 and 5
+python -m evals.run compare-models
+
+# Custom model list
+python -m evals.run compare-models --models gpt-5-chat DeepSeek-V3.2 --levels 1 5
+```
+
+Output: `evals/reports/comparison_all_models_<timestamp>.csv`
+
+---
+
+### `python -m evals.prompt_design generate [--write]`
+
+Uses `gpt-5-chat` (the strongest available UiT Azure deployment) to write purpose-built
+system prompts for levels 1 and 5. Prompts are anchored to the rubric dimensions so the
+model is explicitly asked to maximise faithfulness, level_match, coverage, and clarity.
+
+Without `--write`, prints the generated prompts as a dry run.
+With `--write`, updates `n8n_workflows/prompts.yaml` directly.
+
+```bash
+python -m evals.prompt_design generate           # dry run
+python -m evals.prompt_design generate --write   # write to prompts.yaml
+rm -rf evals/cache/generations/                  # clear cache after writing
+```
+
+---
+
+### `python -m evals.visualize --csv <path> [--out <dir>]`
+
+Generates three PNG charts from a comparison CSV and prints a summary table to stdout.
+Requires `matplotlib` and `pandas` (included in the eval venv).
+
+```bash
+python -m evals.visualize --csv "evals/reports/comparison_all_models_*.csv" --out evals/figures/
+```
+
+Outputs:
+- `rubric_by_model.png` — grouped bar chart, one bar per rubric dimension per model
+- `tokens_by_model.png` — mean completion tokens per model
+- `rubric_by_level.png` — line chart of normalized rubric score by level per model
+
+---
+
+### `python -m evals.run evaluate [--model M] [--levels L1 L2 ...]`
+
+Scores all cases (or a subset) against the current `prompts.yaml`. Saves a JSON report
+and a CSV. Supports overriding the generator model inline without editing `.env`.
+
+```bash
+python -m evals.run evaluate                        # all levels, default model
+python -m evals.run evaluate --model mistral-Large-3 --levels 1 5
+```
+
+---
 
 ### `python -m evals.optimize [--levels N] [--budget N] [--optimizer copro|mipro]`
 
