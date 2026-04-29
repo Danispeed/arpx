@@ -51,6 +51,33 @@ The optimized artefact is always plain text in `prompts.yaml`. Model weights nev
 
 ---
 
+## prompts.yaml format contract (important)
+
+The n8n workflow currently parses `n8n_workflows/prompts.yaml` with regex-based extraction
+for system prompts. That parser expects specific YAML formatting.
+
+Required formatting rules:
+
+- Every per-level system prompt must use block literal style:
+  ```yaml
+  system: |
+    You are ...
+  ```
+- Do **not** switch system prompts to single-quoted or double-quoted inline scalars.
+  Example to avoid:
+  ```yaml
+  system: "You are ..."
+  ```
+- Keep `shared.constraints` items double-quoted strings.
+
+If these rules are violated, n8n may fail to extract prompts and the model can fall back
+to default generic responses (for example: "Hello there! How can I help you today?").
+
+When generating or optimizing prompts in evals, keep this formatting intact before
+committing changes.
+
+---
+
 ## Why this is not ML training
 
 Standard fine-tuning updates a model's weights on labelled examples. This pipeline
