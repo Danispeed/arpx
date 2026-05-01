@@ -16,7 +16,7 @@ client = AzureOpenAI(
 )
 # Currently using fixed size chunking stratey
 # Could change this later to sentence-based or sliding window
-def chunk_text_fixed(text, chunk_size=300):
+def chunk_text_fixed(text, chunk_size):
     words = text.split()
     chunks = []
     
@@ -30,16 +30,19 @@ def chunk_text_fixed(text, chunk_size=300):
     
     return chunks
 
-def chunk_text_sentence(text):
+def chunk_text_sentence(text, chunk_size):
     sentences = split_into_sentences(text)
     chunks = []
     
-    for sentence in sentences:
-        chunks.append(sentence)
+    for i in range(0, len(sentences), chunk_size):
+        chunk = " ".join(sentences[i:i + chunk_size])
+        
+        if chunk:
+            chunks.append(chunk)
     
     return chunks
 
-def chunk_text_sliding(text, chunk_size=300, overlap=50):
+def chunk_text_sliding(text, chunk_size, overlap):
     # Chunk size = number of words per chunk
     # overlap = number of words overlapping between chunks
     words = text.split()
@@ -56,7 +59,7 @@ def chunk_text_sliding(text, chunk_size=300, overlap=50):
     
     return chunks
 
-def chunk_text_llm(text):
+def chunk_text_llm(text, chunk_size):
     prompt = f"""
     You are an expert in analyzing academic research papers.
 
@@ -66,7 +69,7 @@ def chunk_text_llm(text):
     - Each chunk must represent ONE coherent idea or concept
     - Do NOT break sentences in the middle
     - Combine related sentences into the same chunk
-    - Keep chunks reasonably sized (around 300 words long)
+    - Keep chunks reasonably sized (around {chunk_size} words long)
     - Avoid redundancy
 
     Output format:

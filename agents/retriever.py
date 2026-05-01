@@ -3,17 +3,21 @@ from rag.chunking import chunk_text_fixed, chunk_text_sentence, chunk_text_slidi
 from rag.embeddings import embed_chunks
 from rag.weaviate_db import create_schema, store_chunks, query_chunks
 from rag.semantic_scholar import fetch_paper_data
+from evals.chunking import chunking_experiment
 import requests
 import io
 
 # Index both the main paper and the referenced papers
-def index_papers(paper, chat_id, num_refernces):
+def index_papers(paper, chat_id, num_refernces, run_eval=False):
     # Begin with main paper
     # Extract text
     text = extract_text_from_pdf(paper)  
     
+    if run_eval:
+        chunking_experiment(text)
+    
     # Chunk text
-    chunks = chunk_text_sliding(text)
+    chunks = chunk_text_sliding(text, 300, 50)
     
     # Create embeddings
     embeddings = embed_chunks(chunks)
@@ -46,7 +50,7 @@ def index_papers(paper, chat_id, num_refernces):
                 
                 reference_text = extract_text_from_pdf(pdf_file)
                 
-                reference_chunks = chunk_text_sliding(reference_text)
+                reference_chunks = chunk_text_sliding(reference_text, 300, 50)
                 reference_embeddings = embed_chunks(reference_chunks)
                 
                 store_chunks(reference_chunks, reference_embeddings, "reference", chat_id)
@@ -60,7 +64,7 @@ def index_papers(paper, chat_id, num_refernces):
         # Fallback: abstract
         if data["abstract"]:
             print("Using abstract")
-            abstract_chunks = chunk_text_sliding(data["abstract"])
+            abstract_chunks = chunk_text_sliding(data["abstract"], 300, 50)
             abstract_embeddings = embed_chunks(abstract_chunks)
             
             store_chunks(abstract_chunks, abstract_embeddings, "reference", chat_id)
