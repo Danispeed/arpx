@@ -1,6 +1,7 @@
-from agents.retriever import index_papers, retrieve_chunks
+from agents.retriever import index_papers
 from agents.analyzer import find_topics
 from api_client import call_orchestrator
+from rag.rag_types import retrieve_chunks_naive, retrieve_chunks_llm_query, retrieve_chunks_fusion
 
 def analyze_paper(paper, chat_id, num_references):    
     # Index paper (should only happen once)
@@ -10,7 +11,7 @@ def analyze_paper(paper, chat_id, num_references):
     query = "What are the main topics of this research paper?"
     
     # Retrieve relevant chunks
-    topic_chunks = retrieve_chunks(query, chat_id)
+    topic_chunks = retrieve_chunks_naive(query, chat_id)
     
     # Send to the explainer agent the relevant chunks + query
     topics = find_topics(topic_chunks, query) 
@@ -28,7 +29,7 @@ def explain_paper(level, topics, chat_id):
         }
     
     query = "Explain the main ideas of this research paper"
-    explain_chunks = retrieve_chunks(query, chat_id)
+    explain_chunks = retrieve_chunks_naive(query, chat_id)
     paper_excerpt = "\n\n".join(explain_chunks)
     
     result = call_orchestrator("explain", paper_excerpt, level, topics, None, None)
@@ -50,7 +51,7 @@ def generate_message_response(question, level, chat_id, history):
             "mermaid_code": ""
         }
     
-    relevant_chunks = retrieve_chunks(question, chat_id)
+    relevant_chunks = retrieve_chunks_llm_query(question, chat_id)
     paper_excerpt = "\n\n".join(relevant_chunks)
     
     result = call_orchestrator("chat", paper_excerpt, level, None, question, history)
