@@ -1,3 +1,5 @@
+matplotlib
+pandas
 streamlit
 pymupdf
 torch==2.2.2
@@ -11,3 +13,7 @@ python-dotenv
 requests
 streamlit-mermaid
 matplotlib
+dspy-ai
+ragas
+tenacity
+pyyaml
