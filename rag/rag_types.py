@@ -86,7 +86,7 @@ def retrieve_chunks_fusion(user_query, chat_id, k=5):
     )
     
     # return top-k chunks
-    return [chunk for chunk in _ in ranked_chunks[:k]]
+    return [chunk for chunk, _ in ranked_chunks[:k]]
         
 
 def generate_multiple_queries(user_query, n):

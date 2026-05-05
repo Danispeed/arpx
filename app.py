@@ -5,6 +5,7 @@ from rag.weaviate_db import clear
 import streamlit_mermaid as stmd
 from db.history_db import init_db, save_explanation, load_history, update_explanation, save_message
 import uuid
+from rag.rag_types import retrieve_chunks_naive, retrieve_chunks_llm_query, retrieve_chunks_fusion
 
 # State (since every user interaction reruns the entire script from top to bottom)
 if "analyzed" not in st.session_state:
@@ -195,7 +196,8 @@ if st.session_state.explained:
                 user_input,
                 st.session_state.level,
                 st.session_state.chat_id,
-                st.session_state.chat_messages
+                st.session_state.chat_messages,
+                retrieve_chunks_fusion
             )
             
             response_text = result.get("text_explanation")

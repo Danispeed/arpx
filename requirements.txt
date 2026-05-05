@@ -17,3 +17,4 @@ dspy-ai
 ragas
 tenacity
 pyyaml
+datasets

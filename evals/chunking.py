@@ -6,6 +6,7 @@ from rag.embeddings import embed_chunks
 import random
 import matplotlib.pyplot as plt
 import pandas as pd
+import os
 
 def chunking_experiment(text):
     chunk_sizes = [100, 200, 300, 500]
@@ -142,7 +143,8 @@ def plot_results(results, filename="chunking_evaluation.pdf"):
     
     # Save to pdf
     plt.tight_layout()
-    plt.savefig(filename)
+    save_path = os.path.join("evals", filename)
+    plt.savefig(save_path)
     
     plt.close()
         

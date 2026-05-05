@@ -2,6 +2,7 @@ from agents.retriever import index_papers
 from agents.analyzer import find_topics
 from api_client import call_orchestrator
 from rag.rag_types import retrieve_chunks_naive, retrieve_chunks_llm_query, retrieve_chunks_fusion
+from evals.rag_types import run_rag_evaluation
 
 def analyze_paper(paper, chat_id, num_references):    
     # Index paper (should only happen once)
@@ -18,7 +19,7 @@ def analyze_paper(paper, chat_id, num_references):
     
     return topics
 
-def explain_paper(level, topics, chat_id):
+def explain_paper(level, topics, chat_id, run_eval=True):
     # Health check
     ping = call_orchestrator("ping", None, None, None, None, None)
     
@@ -27,6 +28,10 @@ def explain_paper(level, topics, chat_id):
             "text_explanation": "Error Backend (n8n) is not reachable.",
             "mermaid_code": ""
         }
+    
+    # Optional, rag types evaluation
+    if run_eval:
+        run_rag_evaluation(chat_id)
     
     query = "Explain the main ideas of this research paper"
     explain_chunks = retrieve_chunks_naive(query, chat_id)
@@ -42,7 +47,7 @@ def explain_paper(level, topics, chat_id):
     
     return result
 
-def generate_message_response(question, level, chat_id, history):
+def generate_message_response(question, level, chat_id, history, retrieve_func):
     ping = call_orchestrator("ping", None, None, None, None, None)
     
     if not ping or ping.get("text_explanation") != "pong":
@@ -51,7 +56,7 @@ def generate_message_response(question, level, chat_id, history):
             "mermaid_code": ""
         }
     
-    relevant_chunks = retrieve_chunks_llm_query(question, chat_id)
+    relevant_chunks = retrieve_func(question, chat_id)
     paper_excerpt = "\n\n".join(relevant_chunks)
     
     result = call_orchestrator("chat", paper_excerpt, level, None, question, history)
