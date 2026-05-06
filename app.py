@@ -3,6 +3,7 @@ from agents.supervisor import analyze_paper, explain_paper, generate_message_res
 from rag.utils import find_num_references
 from rag.weaviate_db import clear
 import streamlit_mermaid as stmd
+from utils.mermaid_sanitizer import sanitize as sanitize_mermaid
 from db.history_db import init_db, save_explanation, load_history, update_explanation, save_message
 import uuid
 
@@ -176,7 +177,9 @@ if st.session_state.explained:
         
         mermaid_code = result.get("mermaid_code", "")
         if mermaid_code:
-            stmd.st_mermaid(mermaid_code)
+            clean_code, diagram_type = sanitize_mermaid(mermaid_code)
+            stmd.st_mermaid(clean_code, height=400)
+            st.caption(f"Diagram type: {diagram_type}")
             
         st.subheader("Ask follow-up questions")
         
