@@ -16,13 +16,13 @@ client = AzureOpenAI(
     azure_endpoint=_AZURE_ENDPOINT or None,
 )
 
-def retrieve_chunks_naive(user_query, chat_id, k=5):
-    return retrieve_chunks(user_query, chat_id)
+def retrieve_chunks_naive(user_query, chat_id, k):
+    return retrieve_chunks(user_query, chat_id, k)
 
 
-def retrieve_chunks_llm_query(user_query, chat_id, k=5):
+def retrieve_chunks_llm_query(user_query, chat_id, k):
     new_query = generate_search_query(user_query)
-    return retrieve_chunks(new_query, chat_id)
+    return retrieve_chunks(new_query, chat_id, k)
 
 def generate_search_query(user_query):
     prompt = f"""
@@ -56,12 +56,12 @@ def generate_search_query(user_query):
     
     return response.choices[0].message.content.strip()
 
-def retrieve_chunks_fusion(user_query, chat_id, k=5):
+def retrieve_chunks_fusion(user_query, chat_id, k):
     queries = generate_multiple_queries(user_query, 3)
     
     chunk_ranks = {}
     for query in queries:
-        retrieved = retrieve_chunks(query, chat_id)
+        retrieved = retrieve_chunks(query, chat_id, k)
         
         for rank, chunk in enumerate(retrieved):
             if chunk not in chunk_ranks:

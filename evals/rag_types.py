@@ -45,7 +45,8 @@ def set_up_rag_experiment(chat_id):
                 5,
                 chat_id,
                 [],
-                retrieve_func
+                retrieve_func,
+                5
             )
             
             answer = response["text_explanation"]

@@ -66,7 +66,7 @@ def store_chunks(chunks, embeddings, source, chat_id):
 
 # This function
 # will now retrieve the top 5 chunks based on the query, this parameter can be changed
-def query_chunks(query_embedding, chat_id, top_k_main=5, top_k_ref=2):
+def query_chunks(query_embedding, chat_id, top_k_main, top_k_ref):
     collection = client.collections.get("PaperChunk")
     
     # Chunks from the main paper (the paper that was uploaded by the user)

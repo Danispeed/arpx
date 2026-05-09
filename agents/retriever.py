@@ -70,12 +70,13 @@ def index_papers(paper, chat_id, num_refernces, run_eval=False):
             store_chunks(abstract_chunks, abstract_embeddings, "reference", chat_id)
         
 
-def retrieve_chunks(query, chat_id):
+def retrieve_chunks(query, chat_id, k):
     # Embed query
     query_embedding = embed_chunks([query])[0]
     
     # Retrieve relevant chunks
-    retrieved_chunks = query_chunks(query_embedding, chat_id)
+    k_ref = int(k / 3)
+    retrieved_chunks = query_chunks(query_embedding, chat_id, k, k_ref)
     
     return retrieved_chunks
      

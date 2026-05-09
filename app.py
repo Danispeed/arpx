@@ -197,7 +197,8 @@ if st.session_state.explained:
                 st.session_state.level,
                 st.session_state.chat_id,
                 st.session_state.chat_messages,
-                retrieve_chunks_fusion
+                retrieve_chunks_fusion,
+                5
             )
             
             response_text = result.get("text_explanation")
