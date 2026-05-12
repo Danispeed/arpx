@@ -470,7 +470,21 @@ planner:
     Your brief MUST contain exactly three things:
     1. CORE IDEA: The paper's central contribution in one sentence.
     2. METAPHOR: A concrete visual analogy appropriate for a level {level} reader.
-       Level 1-3: everyday scene. Level 4-7: domain-relevant scene. Level 8-10: abstract concept.
+       - Level 1-3: ONE everyday scene with ONE focal object. Examples:
+         "a single LEGO set being assembled by many hands at once" (parallelism),
+         "a librarian rearranging one bookshelf for faster lookup" (indexing),
+         "one chef switching between several cooking stations" (multitasking).
+       - Level 4-7: Domain-relevant scene with concrete props. Examples:
+         "interlocking gears synchronising a clock" (consensus protocols),
+         "a relay race team passing batons" (pipeline stages).
+       - Level 8-10: Abstract single concept. Examples: "converging beams of
+         light forming a single point", "fractal branching into self-similarity".
+       METAPHOR REQUIREMENTS:
+       - Must visually anchor to the paper's specific domain (data, code, biology,
+         physics, etc.) — no generic "progress" or "old vs new" imagery.
+       - BANNED clichés: highways/traffic, mountains, bridges, journeys, oceans,
+         generic city skylines, generic factory/machine, brain/lightbulb.
+       - Must have ONE clear focal subject — not multiple competing elements.
     3. FOCUS: What narrative thread all agents should emphasize.
 
     Output ONLY the brief. No preamble, no labels, no markdown headers.
@@ -491,33 +505,50 @@ planner:
 
 image_prompt:
   system: |
-    You are the Visual Analogy agent of ARPX. Using the planner's brief and the
-    paper excerpt, create ONE image generation prompt for Stable Diffusion.
+    You are the Visual Analogy agent of ARPX. Convert the planner's METAPHOR
+    into ONE SDXL Turbo prompt. The metaphor is FIXED — do not invent a new one.
 
     PURPOSE: Create a visual metaphor that helps the reader intuitively grasp the
     paper's core idea. This is NOT a technical diagram — the Mermaid agent handles
     that. Your image should evoke understanding through concrete, memorable imagery.
 
-    LEVEL-BASED STYLE:
-    - Level 1-3 (beginner): Everyday scene metaphor. Map the core idea to something
-      from daily life — kitchen, playground, traffic, nature, classroom.
-    - Level 4-7 (intermediate): Domain-relevant metaphor. Use objects or scenes that
-      connect to the field but remain visually concrete — lab equipment, networks as
-      physical structures, data as flowing rivers.
-    - Level 8-10 (expert): Abstract or artistic conceptual representation. More
-      metaphorical and aesthetically driven — converging light, geometric patterns,
-      emergent structures.
+    FORMAT (SDXL Turbo works best with short comma-separated tags, NOT prose):
+      [quality tags], [focal subject], [composition], [setting/mood], [style tag]
 
-    PROMPT RULES:
-    - Output ONLY the image prompt text. Nothing else — no labels, no explanation.
-    - One paragraph, 30-60 words.
-    - Describe: subject, setting, mood, art style.
-    - Always end with a style hint: "digital art", "illustration", "watercolor",
-      "conceptual art", "3d render", or similar.
-    - Do NOT include text, labels, equations, charts, or diagrams in the scene —
-      Stable Diffusion renders text poorly.
-    - Do NOT mention paper titles, author names, or technical acronyms.
-    - The metaphor MUST relate to the actual paper content and the planner's brief.
+    Example output for L1: "clean simple illustration, one chef juggling pans
+    at three stoves, centered subject, warm kitchen background, flat cartoon style"
+
+    Example output for L5: "isometric illustration, interlocking brass gears
+    synchronising a pocket watch, centered composition, soft blue background,
+    clean infographic style"
+
+    Example output for L9: "minimalist conceptual art, beams of light converging
+    to a single point, centered symmetry, deep black background, abstract digital art"
+
+    LEVEL-BASED STYLE (locked):
+    - L1-3: end with one of "flat cartoon style", "children's book style",
+      "minimalist illustration". BANNED words: detailed, complex, sprawling,
+      intricate, semi-realistic, photorealistic, cinematic.
+    - L4-7: end with one of "clean illustration", "infographic style",
+      "isometric illustration". Moderate detail OK; composition stays focused.
+    - L8-10: end with one of "conceptual art", "minimalist 3d render",
+      "abstract digital art".
+
+    HARD RULES:
+    - Output ONLY the prompt text. Nothing else — no labels, no quotes, no preamble.
+    - 20-40 words total. Comma-separated tags, NOT full sentences.
+    - Start with quality tags: "clean simple illustration" (L1-3),
+      "clean illustration" (L4-7), "minimalist conceptual art" (L8-10).
+    - Always include a composition tag: "centered subject", "centered composition",
+      or "centered symmetry".
+    - Always include a background tag: "{color} background" or "clean background".
+    - Use the planner's METAPHOR verbatim as the focal subject. Do not reinterpret.
+    - NO text, labels, equations, charts, or diagrams in the scene.
+    - NO paper titles, author names, acronyms (e.g. "MapReduce", "RDBMS").
+    - NO banned clichés: highway, traffic, mountain, bridge, journey, ocean,
+      generic city, generic factory, brain, lightbulb.
+    - Proofread: no truncated/merged words (e.g. "cityscapold"), no broken
+      punctuation. Re-read your output before emitting.
 
   user_template: |
     Planner brief:

@@ -73,10 +73,13 @@ for item in history:
         if text and not text.startswith("Error"):
             st.session_state.explanation = {
                 "text_explanation": text,
-                "mermaid_code": mermaid
+                "mermaid_code": mermaid,
+                "image_prompt": item.get("image_prompt", ""),
+                "analogy_image": item.get("analogy_image", ""),
+                "planner_brief": item.get("planner_brief", ""),
             }
             st.session_state.explained = True
-            st.session_state.chat_messages = messages    
+            st.session_state.chat_messages = messages
         
         else:
             st.session_state.explanation = None
@@ -178,9 +181,17 @@ if st.session_state.explained:
         mermaid_code = result.get("mermaid_code", "")
         if mermaid_code:
             clean_code, diagram_type = sanitize_mermaid(mermaid_code)
-            stmd.st_mermaid(clean_code, height=400)
+            height = 600 if diagram_type == "mindmap" else 400
+            stmd.st_mermaid(clean_code, height=height)
             st.caption(f"Diagram type: {diagram_type}")
             
+        # Show visual analogy image
+        analogy_image = result.get("analogy_image", "")
+        if analogy_image:
+            st.subheader("Visual Analogy")
+            import base64
+            st.image(base64.b64decode(analogy_image), caption=result.get("image_prompt", ""), use_container_width=True)
+
         st.subheader("Ask follow-up questions")
         
         # Show previous messages
