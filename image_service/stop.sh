@@ -15,7 +15,7 @@ fi
 PID=$(cat server.pid)
 HOST=$(cat server.host 2>/dev/null || echo "localhost")
 
-if [[ "$(hostname)" != "$HOST" ]]; then
+if [[ "$(hostname)" != "$HOST" && "$(hostname -s)" != "$HOST" ]]; then
     ssh "$HOST" "kill $PID 2>/dev/null" || true
 else
     kill "$PID" 2>/dev/null || true

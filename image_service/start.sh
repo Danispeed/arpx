@@ -16,7 +16,7 @@ GPU_NODE="${1:-c6-4}"
 PREFERRED_PORT="${2:-0}"
 
 # If not on the target GPU node, SSH there and re-run
-if [[ "$(hostname)" != "$GPU_NODE" ]]; then
+if [[ "$(hostname)" != "$GPU_NODE" && "$(hostname -s)" != "$GPU_NODE" ]]; then
     exec ssh "$GPU_NODE" "cd '$SCRIPT_DIR' && bash start.sh '$GPU_NODE' '$PREFERRED_PORT'"
 fi
 
