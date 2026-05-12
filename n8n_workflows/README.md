@@ -66,11 +66,11 @@ n8n 2.x requires both steps for production webhooks:
 [`prompts.yaml`](prompts.yaml) is the runtime source of truth for all agent prompts. The workflow reads `/data/prompts.yaml` on every execution — prompt changes take effect immediately without re-importing the workflow JSON.
 
 Agents and their prompt keys:
-- `PlannerAgent` — `planner.system`, `planner.user_template`
-- `ExplainerAgent` — `explainer.levels[N].system`, `explainer.user_template`
-- `MermaidAgent` — `mermaid.system`, `mermaid.user_template`
-- `ImagePromptAgent` — `image_prompt.system`, `image_prompt.user_template`
-- `ChatAgent` — `chat.levels[N].system`, `chat.user_template`
+- `ExplainerAgent` — `explainer.levels[N].system` (per-level system prompt), `explainer.user_template`
+- `ChatAgent` — `chat.levels[N].system` (per-level system prompt), `chat.user_template`
+- `PlannerAgent` — `planner.system` (level injected via user template), `planner.user_template`
+- `MermaidAgent` — `mermaid.system` (level-aware complexity rules embedded), `mermaid.user_template`
+- `ImagePromptAgent` — `image_prompt.system` (level injected via user template), `image_prompt.user_template`
 
 ---
 
