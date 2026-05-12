@@ -41,7 +41,7 @@ Eval-only vars: see `evals/CLAUDE.md`.
 
 3 containers: `app` (Streamlit), `weaviate`, `n8n`.
 n8n mounts `./n8n_workflows` → `/data` inside container.
-After `docker compose up`, import `n8n_workflows/arpx-mvp.json` manually and activate — see `n8n_workflows/setup-n8n.md`.
+After `docker compose up`, import `n8n_workflows/arpx-mvp.json` manually and activate — see `n8n_workflows/README.md`.
 Weaviate needs warm-up after cold start; `create_schema()` is idempotent.
 
 ## Explanation levels

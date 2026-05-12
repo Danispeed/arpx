@@ -126,7 +126,7 @@ GPU --> UI
 
 ## Detailed setup docs
 
-- n8n workflow: [`n8n_workflows/setup-n8n.md`](n8n_workflows/setup-n8n.md)
+- n8n workflow: [`n8n_workflows/README.md`](n8n_workflows/README.md)
 - Image service (GPU cluster): [`image_service/README.md`](image_service/README.md)
 
 ## AI assistance attribution
