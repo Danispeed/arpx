@@ -21,18 +21,7 @@ python -m evals.optimize --optimizer mipro
 
 ## Eval grid
 
-`evals/cases.yaml` — 3 papers × 10 levels = 30 cases.
-Add paper: drop PDF in `evals/papers/`, add entry with `expected_topics` to `cases.yaml`.
-
-## Three-tier cache (evals/cache/)
-
-| Dir | Key | Invalidate when |
-|---|---|---|
-| `excerpts/` | PDF SHA-256 (16 hex) | PDF changes |
-| `generations/` | hash(model + system + user + temperature) | prompts.yaml changes |
-| `judge/` | hash(output + level + judge_model) | output or judge model changes |
-
-Re-running evaluate on unchanged prompts ≈ 0 API calls. Delete cache dir when changing grader logic or judge model.
+`evals/cases.yaml` — 3 papers × 10 levels = 30 cases. See README.md to add papers.
 
 ## Graders
 
