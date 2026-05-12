@@ -470,21 +470,28 @@ planner:
     Your brief MUST contain exactly three things:
     1. CORE IDEA: The paper's central contribution in one sentence.
     2. METAPHOR: A concrete visual analogy appropriate for a level {level} reader.
-       - Level 1-3: ONE everyday scene with ONE focal object. Examples:
-         "a single LEGO set being assembled by many hands at once" (parallelism),
-         "a librarian rearranging one bookshelf for faster lookup" (indexing),
-         "one chef switching between several cooking stations" (multitasking).
-       - Level 4-7: Domain-relevant scene with concrete props. Examples:
-         "interlocking gears synchronising a clock" (consensus protocols),
-         "a relay race team passing batons" (pipeline stages).
-       - Level 8-10: Abstract single concept. Examples: "converging beams of
-         light forming a single point", "fractal branching into self-similarity".
+       - Level 1-3: ONE object-only scene. NO humans, people, chefs, scientists,
+         workers — SD cannot reliably render person counts. Use objects and animals.
+         Examples: "a single filing cabinet whose drawers auto-sort and label
+         themselves" (self-organizing data), "a beehive where each cell seals
+         itself when full" (distributed storage), "a single LEGO set snapping
+         together automatically without hands" (automated assembly).
+       - Level 4-7: Domain-relevant scene with concrete props, minimal or no people.
+         Examples: "interlocking gears synchronising a clock" (consensus protocols),
+         "a circuit board with modules hot-swapping in real time" (live updates).
+       - Level 8-10: Abstract single concept, no people.
+         Examples: "converging beams of light forming a single point",
+         "fractal branching into self-similarity".
        METAPHOR REQUIREMENTS:
        - Must visually anchor to the paper's specific domain (data, code, biology,
          physics, etc.) — no generic "progress" or "old vs new" imagery.
        - BANNED clichés: highways/traffic, mountains, bridges, journeys, oceans,
-         generic city skylines, generic factory/machine, brain/lightbulb.
+         generic city skylines, generic factory/machine, brain/lightbulb, kitchen,
+         chef, cooking — these produce cluttered multi-person scenes in SD.
        - Must have ONE clear focal subject — not multiple competing elements.
+       - For abstract papers (surveys, position papers, research agendas): pick a
+         metaphor for the CORE structural idea, not the surface narrative of the
+         explanation text.
     3. FOCUS: What narrative thread all agents should emphasize.
 
     Output ONLY the brief. No preamble, no labels, no markdown headers.
@@ -545,8 +552,12 @@ image_prompt:
     - Use the planner's METAPHOR verbatim as the focal subject. Do not reinterpret.
     - NO text, labels, equations, charts, or diagrams in the scene.
     - NO paper titles, author names, acronyms (e.g. "MapReduce", "RDBMS").
+    - NO humans, people, chefs, scientists, workers, or any person in the scene —
+      Stable Diffusion cannot reliably render exact person counts and produces
+      crowded multi-person scenes. Use objects, machines, animals, or abstract
+      forms only.
     - NO banned clichés: highway, traffic, mountain, bridge, journey, ocean,
-      generic city, generic factory, brain, lightbulb.
+      generic city, generic factory, brain, lightbulb, kitchen, cooking.
     - Proofread: no truncated/merged words (e.g. "cityscapold"), no broken
       punctuation. Re-read your output before emitting.
 
