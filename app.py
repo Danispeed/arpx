@@ -172,25 +172,34 @@ if st.session_state.explained:
     result = st.session_state.explanation
     
     if result:
-        # Show text
-        st.markdown(result.get("text_explanation", ""))
-        
+        import base64 as _b64
+        analogy_image = result.get("analogy_image", "")
+        text = result.get("text_explanation", "")
+
+        # Render explanation with inline image at [ANALOGY_IMAGE] marker
+        if analogy_image and "[ANALOGY_IMAGE]" in text:
+            before, after = text.split("[ANALOGY_IMAGE]", 1)
+            st.markdown(before)
+            col1, col2, col3 = st.columns([1, 2, 1])
+            with col2:
+                st.image(_b64.b64decode(analogy_image), use_container_width=True)
+            st.markdown(after)
+        else:
+            st.markdown(text.replace("[ANALOGY_IMAGE]", ""))
+            if analogy_image:
+                col1, col2, col3 = st.columns([1, 2, 1])
+                with col2:
+                    st.image(_b64.b64decode(analogy_image), use_container_width=True)
+
         # Show diagram
         st.subheader("Diagram")
-        
+
         mermaid_code = result.get("mermaid_code", "")
         if mermaid_code:
             clean_code, diagram_type = sanitize_mermaid(mermaid_code)
             height = 600 if diagram_type == "mindmap" else 400
             stmd.st_mermaid(clean_code, height=height)
             st.caption(f"Diagram type: {diagram_type}")
-            
-        # Show visual analogy image
-        analogy_image = result.get("analogy_image", "")
-        if analogy_image:
-            st.subheader("Visual Analogy")
-            import base64
-            st.image(base64.b64decode(analogy_image), caption=result.get("image_prompt", ""), use_container_width=True)
 
         st.subheader("Ask follow-up questions")
         

@@ -18,6 +18,11 @@ shared:
 
 explainer:
   user_template: |
+    Planner brief (contains the visual metaphor used for the illustration):
+
+    {planner_brief}
+
+
     Paper excerpt:
 
     {paper_excerpt}
@@ -29,6 +34,8 @@ explainer:
 
 
     Write the explanation for a level {level} reader, strictly following the rules for this level. Do not mention the level number in your output.
+
+    IMAGE PLACEMENT RULE: At the natural point in your explanation where you introduce or describe the analogy from the planner brief, write the token [ANALOGY_IMAGE] on its own line immediately after that sentence. The UI will render the visual illustration at that exact point. Use it exactly once. Do not describe what the image shows.
 
   levels:
     1:
