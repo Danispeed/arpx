@@ -197,8 +197,7 @@ if st.session_state.explained:
         mermaid_code = result.get("mermaid_code", "")
         if mermaid_code:
             clean_code, diagram_type = sanitize_mermaid(mermaid_code)
-            height = 600 if diagram_type == "mindmap" else 400
-            stmd.st_mermaid(clean_code, height=height)
+            stmd.st_mermaid(clean_code, height=400)
             st.caption(f"Diagram type: {diagram_type}")
 
         st.subheader("Ask follow-up questions")
