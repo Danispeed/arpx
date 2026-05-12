@@ -46,8 +46,34 @@ def _fix_flowchart(code: str) -> str:
     return "\n".join(fixed)
 
 
+def _is_flat_mindmap(code: str) -> bool:
+    lines = [l for l in code.splitlines() if l.strip() and not l.strip().lower().startswith("mindmap")]
+    if len(lines) < 2:
+        return False
+    indents = [len(l) - len(l.lstrip()) for l in lines]
+    return len(set(indents)) <= 1
+
+
+def _flat_mindmap_to_flowchart(code: str) -> str:
+    lines = [l.strip() for l in code.splitlines() if l.strip() and not l.strip().lower().startswith("mindmap")]
+    if not lines:
+        return _FALLBACK
+    root_match = re.match(r'root\(\((.+?)\)\)', lines[0])
+    root_label = root_match.group(1) if root_match else lines[0]
+    result = ["flowchart TD", f'  ROOT["{root_label}"]']
+    for i, node in enumerate(lines[1:], 1):
+        label = re.sub(r'^root\(\((.+?)\)\)$', r'\1', node)
+        label = label[:40]
+        result.append(f'  N{i}["{label}"]')
+        result.append(f'  ROOT --> N{i}')
+    return "\n".join(result)
+
+
 def _fix_mindmap(code: str) -> str:
-    return "\n".join(line.replace('\t', '    ') for line in code.splitlines())
+    code = "\n".join(line.replace('\t', '    ') for line in code.splitlines())
+    if _is_flat_mindmap(code):
+        return _flat_mindmap_to_flowchart(code)
+    return code
 
 
 def sanitize(mermaid_code: str) -> tuple[str, str]:
@@ -62,7 +88,10 @@ def sanitize(mermaid_code: str) -> tuple[str, str]:
     if dtype == "flowchart":
         code = _fix_flowchart(code)
     elif dtype == "mindmap":
+        was_flat = _is_flat_mindmap(code)
         code = _fix_mindmap(code)
+        if was_flat:
+            dtype = "flowchart"
 
     if not code.strip():
         return _FALLBACK, "fallback"

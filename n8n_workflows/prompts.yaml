@@ -248,6 +248,20 @@ mermaid:
     - Child nodes are plain text — no brackets, no arrows, no pipes.
     - No special characters: write "and" not "&", write "or" not "/".
     - Node labels should be short noun phrases (2–5 words).
+    - HIERARCHY IS REQUIRED. Every node except root must be indented MORE than
+      its parent. A flat list where all nodes share the same indent is INVALID
+      and will render blank. WRONG example (do NOT do this):
+        mindmap
+          root((Topic))
+          Branch A
+          Branch B
+          Branch C
+      CORRECT: Branch A, B, C must be indented 4 spaces (children of root):
+        mindmap
+          root((Topic))
+            Branch A
+            Branch B
+            Branch C
 
     FLOWCHART TD SYNTAX:
     - Use flowchart TD (top-down), not LR.
