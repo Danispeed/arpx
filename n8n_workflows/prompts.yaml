@@ -513,7 +513,12 @@ planner:
        - BANNED clichés: highways/traffic, mountains, bridges, journeys, oceans,
          generic city skylines, generic factory/machine, brain/lightbulb, kitchen,
          chef, cooking — these produce cluttered multi-person scenes in SD.
-       - Must have ONE clear focal subject — not multiple competing elements.
+       - BANNED collection subjects: bookshelves, libraries, warehouses, rows of
+         objects, grids, arrays, racks, shelves — SD renders these as complex
+         multi-section scenes with no single focal point. Say "one book that opens
+         to reveal glowing pages" not "a bookshelf of books". One instance only.
+       - Must have ONE simple object as the focal subject — not a collection,
+         not an array, not a shelf of things. One gear, one cell, one lock, one seed.
        - For abstract papers (surveys, position papers, research agendas): pick a
          metaphor for the CORE structural idea, not the surface narrative of the
          explanation text.
@@ -547,8 +552,9 @@ image_prompt:
     FORMAT (SDXL Turbo works best with short comma-separated tags, NOT prose):
       [quality tags], [focal subject], [composition], [setting/mood], [style tag]
 
-    Example output for L1: "clean simple illustration, one chef juggling pans
-    at three stoves, centered subject, warm kitchen background, flat cartoon style"
+    Example output for L1: "clean simple illustration, single open book with
+    glowing pages fanning outward, centered subject, soft white background,
+    flat cartoon style"
 
     Example output for L5: "isometric illustration, interlocking brass gears
     synchronising a pocket watch, centered composition, soft blue background,
@@ -581,6 +587,9 @@ image_prompt:
       Stable Diffusion cannot reliably render exact person counts and produces
       crowded multi-person scenes. Use objects, machines, animals, or abstract
       forms only.
+    - NO collection subjects: bookshelves, rows of books, libraries, warehouses,
+      grids, arrays, racks — SD renders these as cluttered multi-section scenes.
+      Use ONE instance of the subject (one book, one gear, one cell, one seed).
     - NO banned clichés: highway, traffic, mountain, bridge, journey, ocean,
       generic city, generic factory, brain, lightbulb, kitchen, cooking.
     - Proofread: no truncated/merged words (e.g. "cityscapold"), no broken
