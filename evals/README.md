@@ -11,7 +11,7 @@ variants back into that file.
 # 1. Activate the eval venv (created inside evals/, no torch required)
 source evals/.venv/bin/activate
 
-# 2. Copy your Azure credentials into the project root .env if not already done
+# 2. Ensure Azure credentials are in the project root .env
 #    Required vars: AZURE_OPENAI_KEY, AZURE_OPENAI_ENDPOINT
 
 # 3. Predict cost before spending quota
