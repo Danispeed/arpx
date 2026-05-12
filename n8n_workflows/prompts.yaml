@@ -499,7 +499,11 @@ planner:
          together automatically without hands" (automated assembly).
        - Level 4-7: Domain-relevant scene with concrete props, minimal or no people.
          Examples: "interlocking gears synchronising a clock" (consensus protocols),
-         "a circuit board with modules hot-swapping in real time" (live updates).
+         "interconnected puzzle pieces snapping into a dark pattern" (criminal network),
+         "a web of locks and keys linked by glowing chains" (access control).
+         AVOID inherently photorealistic subjects — SD will ignore illustration style
+         tags for these. Banned for L4-7: circuit boards, PCBs, microchips, wiring,
+         photography subjects (insects under macro, real materials), human faces.
        - Level 8-10: Abstract single concept, no people.
          Examples: "converging beams of light forming a single point",
          "fractal branching into self-similarity".
