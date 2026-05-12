@@ -38,7 +38,7 @@
     {
       "parameters": {
         "mode": "runOnceForAllItems",
-        "jsCode": "const binaryKey = $input.first().binary?.promptFile ? 'promptFile' : 'data';\nconst buf = await this.helpers.getBinaryDataBuffer(0, binaryKey);\nlet raw = buf.toString('utf8').replace(/\\r\\n?/g, '\\n');\nif (!raw.endsWith('\\n')) raw += '\\n';\n\nconst cMatch = raw.match(/shared:\\n\\s+constraints:\\n((?:\\s+-\\s+\"[^\"]*\"\\n)+)/);\nconst constraints = cMatch\n  ? [...cMatch[1].matchAll(/\"([^\"]+)\"/g)].map(m => m[1])\n  : [];\nconst cBlock = constraints.length\n  ? '\\n\\nConstraints:\\n' + constraints.map(c => '- ' + c).join('\\n')\n  : '';\n\nfunction block(yaml, section, key) {\n  const re = new RegExp(section + ':[\\\\s\\\\S]*?\\\\n  ' + key + ': \\\\|\\\\n((?:    .*\\\\n|\\\\n)*)');\n  const m = yaml.match(re);\n  if (!m) return '';\n  return m[1].replace(/^    /gm, '').trimEnd();\n}\n\nfunction levelSystem(yaml, agent, level) {\n  const re = new RegExp(\n    agent + ':[\\\\s\\\\S]*?levels:[\\\\s\\\\S]*?\\\\n    [\\'\"]?' + level + '[\\'\"]?:\\\\n      system: \\\\|\\\\n((?:        .*\\\\n|\\\\n)*)'\n  );\n  const m = yaml.match(re);\n  if (!m) return '';\n  return m[1].replace(/^        /gm, '').trimEnd();\n}\n\n// Extract all 10 per-level system prompts for explainer and chat.\n// Level selection happens in NormalizeInput (after merge with webhook),\n// where the level value from the request body is available.\nconst explainer_systems = {};\nconst chat_systems = {};\nfor (let lvl = 1; lvl <= 10; lvl++) {\n  const key = String(lvl);\n  explainer_systems[key] = (levelSystem(raw, 'explainer', key) || '') + cBlock;\n  chat_systems[key] = (levelSystem(raw, 'chat', key) || '') + cBlock;\n}\n\nconst explainer_user_template = block(raw, 'explainer', 'user_template');\nconst mermaid_system = block(raw, 'mermaid', 'system') + cBlock;\nconst mermaid_user_template = block(raw, 'mermaid', 'user_template');\nconst chat_user_template = block(raw, 'chat', 'user_template');\n\nreturn [{\n  json: {\n    explainer_systems,\n    explainer_user_template,\n    mermaid_system,\n    mermaid_user_template,\n    chat_systems,\n    chat_user_template,\n  },\n}];"
+        "jsCode": "const binaryKey = $input.first().binary?.promptFile ? 'promptFile' : 'data';\nconst buf = await this.helpers.getBinaryDataBuffer(0, binaryKey);\nlet raw = buf.toString('utf8').replace(/\\r\\n?/g, '\\n');\nif (!raw.endsWith('\\n')) raw += '\\n';\n\nconst cMatch = raw.match(/shared:\\n\\s+constraints:\\n((?:\\s+-\\s+\"[^\"]*\"\\n)+)/);\nconst constraints = cMatch\n  ? [...cMatch[1].matchAll(/\"([^\"]+)\"/g)].map(m => m[1])\n  : [];\nconst cBlock = constraints.length\n  ? '\\n\\nConstraints:\\n' + constraints.map(c => '- ' + c).join('\\n')\n  : '';\n\nfunction block(yaml, section, key) {\n  const re = new RegExp(section + ':[\\\\s\\\\S]*?\\\\n  ' + key + ': \\\\|\\\\n((?:    .*\\\\n|\\\\n)*)');\n  const m = yaml.match(re);\n  if (!m) return '';\n  return m[1].replace(/^    /gm, '').trimEnd();\n}\n\nfunction levelSystem(yaml, agent, level) {\n  const re = new RegExp(\n    agent + ':[\\\\s\\\\S]*?levels:[\\\\s\\\\S]*?\\\\n    [\\'\"]?' + level + '[\\'\"]?:\\\\n      system: \\\\|\\\\n((?:        .*\\\\n|\\\\n)*)'\n  );\n  const m = yaml.match(re);\n  if (!m) return '';\n  return m[1].replace(/^        /gm, '').trimEnd();\n}\n\n// Extract all 10 per-level system prompts for explainer and chat.\n// Level selection happens in NormalizeInput (after merge with webhook),\n// where the level value from the request body is available.\nconst explainer_systems = {};\nconst chat_systems = {};\nfor (let lvl = 1; lvl <= 10; lvl++) {\n  const key = String(lvl);\n  explainer_systems[key] = (levelSystem(raw, 'explainer', key) || '') + cBlock;\n  chat_systems[key] = (levelSystem(raw, 'chat', key) || '') + cBlock;\n}\n\nconst explainer_user_template = block(raw, 'explainer', 'user_template');\nconst mermaid_system = block(raw, 'mermaid', 'system') + cBlock;\nconst mermaid_user_template = block(raw, 'mermaid', 'user_template');\nconst chat_user_template = block(raw, 'chat', 'user_template');\nconst planner_system = block(raw, 'planner', 'system') + cBlock;\nconst planner_user_template = block(raw, 'planner', 'user_template');\nconst image_prompt_system = block(raw, 'image_prompt', 'system') + cBlock;\nconst image_prompt_user_template = block(raw, 'image_prompt', 'user_template');\n\nreturn [{\n  json: {\n    explainer_systems,\n    explainer_user_template,\n    mermaid_system,\n    mermaid_user_template,\n    chat_systems,\n    chat_user_template,\n    planner_system,\n    planner_user_template,\n    image_prompt_system,\n    image_prompt_user_template,\n  },\n}];"
       },
       "id": "e70138a1-c0f7-440d-a179-bbdc1338d51e",
       "name": "ParsePromptsYaml",
@@ -119,6 +119,22 @@
             {
               "name": "history",
               "stringValue": "={{ JSON.stringify($json.body?.history ?? []) }}"
+            },
+            {
+              "name": "planner_system",
+              "stringValue": "={{ String($json.planner_system ?? '') }}"
+            },
+            {
+              "name": "planner_user_template",
+              "stringValue": "={{ String($json.planner_user_template ?? '') }}"
+            },
+            {
+              "name": "image_prompt_system",
+              "stringValue": "={{ String($json.image_prompt_system ?? '') }}"
+            },
+            {
+              "name": "image_prompt_user_template",
+              "stringValue": "={{ String($json.image_prompt_user_template ?? '') }}"
             }
           ]
         },
@@ -267,7 +283,7 @@
         },
         "sendBody": true,
         "specifyBody": "json",
-        "jsonBody": "={{ { messages: [ { role: \"system\", content: $json.explainer_system }, { role: \"user\", content: $json.explainer_user_template.replace('{paper_excerpt}', $json.paper_excerpt).replace('{topics}', $json.topics).replace('{level}', $json.level) } ], temperature: 0.5, max_completion_tokens: 1200 } }}",
+        "jsonBody": "={{ { messages: [ { role: \"system\", content: $json.explainer_system }, { role: \"user\", content: $json.explainer_user_msg } ], temperature: 0.5, max_completion_tokens: 1200 } }}",
         "options": {}
       },
       "id": "9d043641-e009-44e1-b3c6-34d8aebb80ae",
@@ -275,8 +291,8 @@
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
       "position": [
-        -112,
-        1136
+        740,
+        920
       ],
       "credentials": {
         "httpHeaderAuth": {
@@ -302,7 +318,7 @@
         },
         "sendBody": true,
         "specifyBody": "json",
-        "jsonBody": "={{ { messages: [ { role: \"system\", content: $json.mermaid_system }, { role: \"user\", content: $json.mermaid_user_template.replace('{paper_excerpt}', $json.paper_excerpt).replace('{topics}', $json.topics).replace('{level}', $json.level) } ], temperature: 0.3, max_completion_tokens: 900 } }}",
+        "jsonBody": "={{ { messages: [ { role: \"system\", content: $json.mermaid_system }, { role: \"user\", content: $json.mermaid_user_msg } ], temperature: 0.3, max_completion_tokens: 900 } }}",
         "options": {}
       },
       "id": "21b23dec-878a-48e6-855c-4f341b08f640",
@@ -310,8 +326,8 @@
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
       "position": [
-        -112,
-        1312
+        740,
+        1100
       ],
       "credentials": {
         "httpHeaderAuth": {
@@ -338,8 +354,8 @@
       "type": "n8n-nodes-base.set",
       "typeVersion": 3.2,
       "position": [
-        112,
-        1136
+        960,
+        920
       ]
     },
     {
@@ -360,8 +376,8 @@
       "type": "n8n-nodes-base.set",
       "typeVersion": 3.2,
       "position": [
-        112,
-        1312
+        960,
+        1100
       ]
     },
     {
@@ -375,8 +391,8 @@
       "type": "n8n-nodes-base.merge",
       "typeVersion": 3.2,
       "position": [
-        336,
-        1216
+        1180,
+        1010
       ]
     },
     {
@@ -385,11 +401,23 @@
           "values": [
             {
               "name": "text_explanation",
-              "stringValue": "={{ $json.text_explanation }}"
+              "stringValue": "={{ $json.text_explanation ?? '' }}"
             },
             {
               "name": "mermaid_code",
-              "stringValue": "={{ $json.mermaid_code }}"
+              "stringValue": "={{ $json.mermaid_code ?? '' }}"
+            },
+            {
+              "name": "image_prompt",
+              "stringValue": "={{ $json.image_prompt ?? '' }}"
+            },
+            {
+              "name": "analogy_image",
+              "stringValue": "={{ $json.analogy_image ?? '' }}"
+            },
+            {
+              "name": "planner_brief",
+              "stringValue": "={{ $('InjectBrief').first()?.json?.planner_brief ?? '' }}"
             },
             {
               "name": "debug",
@@ -406,8 +434,8 @@
       "type": "n8n-nodes-base.set",
       "typeVersion": 3.2,
       "position": [
-        560,
-        1216
+        1620,
+        1100
       ]
     },
     {
@@ -420,8 +448,8 @@
       "type": "n8n-nodes-base.respondToWebhook",
       "typeVersion": 1.4,
       "position": [
-        768,
-        1216
+        1840,
+        1100
       ]
     },
     {
@@ -434,8 +462,8 @@
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        -112,
-        1488
+        80,
+        1500
       ]
     },
     {
@@ -463,8 +491,8 @@
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
       "position": [
-        112,
-        1488
+        300,
+        1500
       ],
       "credentials": {
         "httpHeaderAuth": {
@@ -500,8 +528,8 @@
       "type": "n8n-nodes-base.set",
       "typeVersion": 3.2,
       "position": [
-        336,
-        1488
+        520,
+        1500
       ]
     },
     {
@@ -514,8 +542,208 @@
       "type": "n8n-nodes-base.respondToWebhook",
       "typeVersion": 1.4,
       "position": [
-        560,
-        1488
+        740,
+        1500
+      ]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://gpt-course.cognitiveservices.azure.com/openai/deployments/gpt-5-chat/chat/completions?api-version=2024-12-01-preview",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "httpHeaderAuth",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ { messages: [ { role: \"system\", content: $json.planner_system.replaceAll('{level}', $json.level) }, { role: \"user\", content: $json.planner_user_template.replaceAll('{paper_excerpt}', $json.paper_excerpt).replaceAll('{topics}', $json.topics).replaceAll('{level}', $json.level) } ], temperature: 0.3, max_completion_tokens: 200 } }}",
+        "options": {}
+      },
+      "id": "f1a2b3c4-d5e6-7890-abcd-100000000001",
+      "name": "PlannerAgent",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        80,
+        1024
+      ],
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "OlznxoofcjeRU7GT",
+          "name": "Header Auth account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "fields": {
+          "values": [
+            {
+              "name": "planner_brief",
+              "stringValue": "={{ $json.choices?.[0]?.message?.content || '' }}"
+            }
+          ]
+        },
+        "include": "none",
+        "options": {}
+      },
+      "id": "f1a2b3c4-d5e6-7890-abcd-100000000002",
+      "name": "SetPlannerOutput",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.2,
+      "position": [
+        300,
+        1024
+      ]
+    },
+    {
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "jsCode": "const brief = $input.first().json.planner_brief;\nconst ni = $('NormalizeInput').first().json;\nconst briefBlock = 'Coordination brief:\\n\\n' + brief + '\\n\\n';\nconst explainer_user_msg = briefBlock + ni.explainer_user_template\n  .replaceAll('{paper_excerpt}', ni.paper_excerpt)\n  .replaceAll('{topics}', ni.topics)\n  .replaceAll('{level}', ni.level);\nconst mermaid_user_msg = briefBlock + ni.mermaid_user_template\n  .replaceAll('{paper_excerpt}', ni.paper_excerpt)\n  .replaceAll('{topics}', ni.topics)\n  .replaceAll('{level}', ni.level);\nconst image_prompt_user_msg = ni.image_prompt_user_template\n  .replaceAll('{planner_brief}', brief)\n  .replaceAll('{paper_excerpt}', ni.paper_excerpt)\n  .replaceAll('{topics}', ni.topics)\n  .replaceAll('{level}', ni.level);\nreturn [{\n  json: {\n    planner_brief: brief,\n    explainer_system: ni.explainer_system,\n    explainer_user_msg,\n    mermaid_system: ni.mermaid_system,\n    mermaid_user_msg,\n    image_prompt_system: ni.image_prompt_system,\n    image_prompt_user_msg,\n  }\n}];"
+      },
+      "id": "f1a2b3c4-d5e6-7890-abcd-100000000003",
+      "name": "InjectBrief",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        520,
+        1024
+      ]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://gpt-course.cognitiveservices.azure.com/openai/deployments/gpt-5-chat/chat/completions?api-version=2024-12-01-preview",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "httpHeaderAuth",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ { messages: [ { role: \"system\", content: $json.image_prompt_system }, { role: \"user\", content: $json.image_prompt_user_msg } ], temperature: 0.7, max_completion_tokens: 150 } }}",
+        "options": {}
+      },
+      "id": "f1a2b3c4-d5e6-7890-abcd-100000000004",
+      "name": "ImagePromptAgent",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        740,
+        1280
+      ],
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "OlznxoofcjeRU7GT",
+          "name": "Header Auth account"
+        }
+      },
+      "onError": "continueRegularOutput"
+    },
+    {
+      "parameters": {
+        "fields": {
+          "values": [
+            {
+              "name": "sd_prompt",
+              "stringValue": "={{ $json.choices?.[0]?.message?.content || '' }}"
+            }
+          ]
+        },
+        "include": "none",
+        "options": {}
+      },
+      "id": "f1a2b3c4-d5e6-7890-abcd-100000000005",
+      "name": "SetSDPrompt",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.2,
+      "position": [
+        960,
+        1280
+      ]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "={{ ($vars?.IMAGE_SERVICE_URL ?? 'http://localhost:8090') + '/generate' }}",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ { prompt: $json.sd_prompt, steps: 4, width: 1024, height: 1024 } }}",
+        "options": {
+          "timeout": 120000
+        }
+      },
+      "id": "f1a2b3c4-d5e6-7890-abcd-100000000006",
+      "name": "CallClusterAPI",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        1180,
+        1280
+      ],
+      "onError": "continueRegularOutput"
+    },
+    {
+      "parameters": {
+        "fields": {
+          "values": [
+            {
+              "name": "image_prompt",
+              "stringValue": "={{ $json.prompt ?? '' }}"
+            },
+            {
+              "name": "analogy_image",
+              "stringValue": "={{ $json.image ?? '' }}"
+            }
+          ]
+        },
+        "include": "none",
+        "options": {}
+      },
+      "id": "f1a2b3c4-d5e6-7890-abcd-100000000007",
+      "name": "SetImageOutput",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.2,
+      "position": [
+        1400,
+        1280
+      ]
+    },
+    {
+      "parameters": {
+        "mode": "combine",
+        "combineBy": "combineByPosition",
+        "options": {}
+      },
+      "id": "f1a2b3c4-d5e6-7890-abcd-100000000008",
+      "name": "MergeWithImage",
+      "type": "n8n-nodes-base.merge",
+      "typeVersion": 3.2,
+      "position": [
+        1400,
+        1100
       ]
     }
   ],
@@ -599,12 +827,7 @@
         ],
         [
           {
-            "node": "ExplainerAgent",
-            "type": "main",
-            "index": 0
-          },
-          {
-            "node": "MermaidAgent",
+            "node": "PlannerAgent",
             "type": "main",
             "index": 0
           }
@@ -616,6 +839,49 @@
         [
           {
             "node": "RespondPing",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "PlannerAgent": {
+      "main": [
+        [
+          {
+            "node": "SetPlannerOutput",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "SetPlannerOutput": {
+      "main": [
+        [
+          {
+            "node": "InjectBrief",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "InjectBrief": {
+      "main": [
+        [
+          {
+            "node": "ExplainerAgent",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "MermaidAgent",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "ImagePromptAgent",
             "type": "main",
             "index": 0
           }
@@ -644,6 +910,17 @@
         ]
       ]
     },
+    "ImagePromptAgent": {
+      "main": [
+        [
+          {
+            "node": "SetSDPrompt",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
     "SetExplainerOutput": {
       "main": [
         [
@@ -666,7 +943,51 @@
         ]
       ]
     },
+    "SetSDPrompt": {
+      "main": [
+        [
+          {
+            "node": "CallClusterAPI",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "CallClusterAPI": {
+      "main": [
+        [
+          {
+            "node": "SetImageOutput",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
     "MergeAgents": {
+      "main": [
+        [
+          {
+            "node": "MergeWithImage",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "SetImageOutput": {
+      "main": [
+        [
+          {
+            "node": "MergeWithImage",
+            "type": "main",
+            "index": 1
+          }
+        ]
+      ]
+    },
+    "MergeWithImage": {
       "main": [
         [
           {

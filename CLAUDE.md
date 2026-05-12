@@ -12,8 +12,8 @@ Phase 1 `analyze_paper(pdf)` (local, no n8n):
 Phase 2 `explain_paper(level, topics)` (calls n8n):
 1. Ping n8n health check — abort if unreachable
 2. Retrieve top-5+2 chunks, POST to N8N_URL with {stage, paper_excerpt, level, topics}, timeout=300s
-3. n8n runs ExplainerAgent + MermaidAgent → {text_explanation, mermaid_code}
-4. Save to SQLite, display in Streamlit
+3. n8n: PlannerAgent → parallel(ExplainerAgent + MermaidAgent + ImagePromptAgent→CallClusterAPI) → {text_explanation, mermaid_code, image_prompt, analogy_image, planner_brief}
+4. Save to SQLite (all fields), display in Streamlit
 
 ## Tech stack
 
@@ -24,7 +24,7 @@ Phase 2 `explain_paper(level, topics)` (calls n8n):
 | Vector DB | Weaviate, collection `PaperChunk`, fields: text, source, vector |
 | Orchestration | n8n external via webhook — never called directly except via `api_client.py` |
 | Embeddings | sentence-transformers all-MiniLM-L6-v2, loaded once at import |
-| Persistence | SQLite `arpx.db` at project root, table `Explanations` |
+| Persistence | SQLite `arpx.db` at project root, table `Explanations` (cols: text_explanation, mermaid_code, image_prompt, analogy_image, planner_brief) |
 | PDF | PyMuPDF (fitz) |
 
 ## Env vars (.env at root)
@@ -52,6 +52,37 @@ Levels 1–10 map to per-level system prompts in `n8n_workflows/prompts.yaml` un
 
 Mermaid agent has single prompt with level-aware complexity rules embedded.
 Shared output constraints in `shared.constraints`.
+
+## Visual Analogy Agent (image generation)
+
+Pipeline: PlannerAgent (LLM brief) → ImagePromptAgent (LLM → SD prompt) → CallClusterAPI → base64 PNG.
+
+All orchestrated in n8n. Runs parallel with Explainer + Mermaid inside explain stage.
+PlannerAgent produces ~100 word brief shared by all three agents for cohesion.
+`image_prompt` and `analogy_image` may be empty if cluster service is unreachable.
+
+Image service: FastAPI in `image_service/` — runs on ificluster GPU node, NOT in Docker stack.
+Model: SDXL Turbo (`stabilityai/sdxl-turbo`, fp16). Lazy-loaded on first `/generate` request.
+Dynamic port allocation; PID/port files on shared filesystem readable from any node.
+
+API: `GET /health`, `POST /generate` → `{image: base64_PNG, prompt: str}`.
+Params: `prompt`, `steps` (default 4), `width`/`height` (default 1024).
+
+Env vars (image service):
+- `IMAGE_SERVICE_URL` — set in n8n UI (Settings → Variables), points to `http://<node>:<port>`
+- `IMAGE_MODEL` — override model ID (default `stabilityai/sdxl-turbo`)
+- `HF_HOME` — model cache dir (default `~/hf_cache`)
+
+GPU nodes:
+| Node | GPU | VRAM |
+|------|-----|------|
+| c6-4 | RTX 3090 | 24 GB |
+| c6-8 | RTX 3090 | 24 GB |
+| c6-5 | RTX 2080 Ti | 11 GB |
+| c6-12 | RTX 2080 SUPER | 8 GB |
+
+One-time setup: create venv, `pip install -r image_service/requirements.txt`, pre-download model. See `image_service/README.md`.
+Per session: `./image_service/start.sh [node]` → copy URL to n8n variable, `./image_service/stop.sh` when done.
 
 ## Key invariants
 

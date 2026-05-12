@@ -8,8 +8,14 @@ The system uses Retrieval-Augmented Generation (RAG), a vector database (Weaviat
 
 - Upload research papers (PDF)
 - Receive the main topics from the paper
-- Semantic search using vector embeddings
-- Modular architecture with orchestrated agents
+- Adaptive explanations across 10 knowledge levels
+- Semantic search using vector embeddings (Weaviate)
+- RAG-augmented context from main paper + referenced papers (Semantic Scholar)
+- Mermaid diagrams for structural/logical visualization
+- Visual analogy images via Stable Diffusion (SDXL Turbo on GPU cluster)
+- Follow-up chat with conversation history
+- Explanation history with SQLite persistence
+- Modular multi-agent architecture orchestrated by n8n
 
 ## System architecture
 
@@ -23,7 +29,10 @@ The system is composed of three primary components:
   - Stores embeddings and enables semantic retrieval
 - **Orchestration layer**
   - n8n
-  - Coordinates LLM calls and generates explanations and diagrams
+  - Coordinates LLM agents: Planner, Explainer, Mermaid, ImagePrompt, Chat
+- **Image generation service**
+  - FastAPI on university GPU cluster (ificluster)
+  - SDXL Turbo for visual analogy generation
 
 ## Running the project (Docker)
 
@@ -60,15 +69,24 @@ Copy **`.env.example`** to **`.env`** and fill in the values described there. Th
 | `AZURE_OPENAI_DEPLOYMENT` | Deployment name (topic extraction) |
 | `AZURE_OPENAI_API_VERSION` | Optional; overrides the default API version in `agents/analyzer.py` if set |
 
+The image service on the GPU cluster uses its own env vars — see [`image_service/README.md`](image_service/README.md).
+
 ## How it works
 
 1. User uploads a research paper.
 2. The paper is processed and split into chunks.
 3. Embeddings are generated and stored in Weaviate.
-4. Relevant chunks are retrieved using semantic search.
-5. The system calls an LLM to find the main topics of the research using the relevant chunks.
-6. Based on the topics, the user selects the knowledge level.
-7. The app sends context to n8n for explanation and visuals.
+4. References are fetched via Semantic Scholar and indexed alongside the main paper.
+5. Relevant chunks are retrieved using semantic search.
+6. The system calls an LLM to find the main topics of the research using the relevant chunks.
+7. Based on the topics, the user selects the knowledge level (1–10).
+8. The app sends context to n8n, which runs:
+   - **PlannerAgent** — creates a coordination brief for cohesion across agents
+   - **ExplainerAgent** — generates an adaptive text explanation
+   - **MermaidAgent** — generates a structural diagram
+   - **ImagePromptAgent** → **GPU cluster** — generates a visual analogy image via Stable Diffusion
+9. Results are displayed in the Streamlit interface.
+10. User can ask follow-up questions via the chat agent.
 
 ## Usage
 
@@ -90,12 +108,14 @@ Chunk --> Embed[Embedding]
 Embed --> WDB[Weaviate]
 WDB --> Context[RetrievedContext]
 Context --> N8N[n8nWorkflow]
-N8N --> Explain[ExplanationAgent]
-N8N --> Diagram[DiagramAgent]
-N8N --> Image[ImageAgent]
+N8N --> Planner[PlannerAgent]
+Planner --> Explain[ExplainerAgent]
+Planner --> Diagram[MermaidAgent]
+Planner --> ImgPrompt[ImagePromptAgent]
+ImgPrompt --> GPU[GPU Cluster - SDXL Turbo]
 Explain --> UI
 Diagram --> UI
-Image --> UI
+GPU --> UI
 ```
 
 ## Project status
@@ -106,7 +126,8 @@ Image --> UI
 
 ## Detailed setup docs
 
-- n8n: [`docs/setup-n8n.md`](docs/setup-n8n.md)
+- n8n workflow: [`n8n_workflows/setup-n8n.md`](n8n_workflows/setup-n8n.md)
+- Image service (GPU cluster): [`image_service/README.md`](image_service/README.md)
 
 ## AI assistance attribution
 

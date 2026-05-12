@@ -12,7 +12,8 @@ n8n is EXTERNAL orchestrator. Python never calls it directly — only via `api_c
 1. `docker compose up -d` → open `http://localhost:5678`
 2. Import `arpx-mvp.json`
 3. Add credential: Header Auth, name=`api-key`, value=Azure key
-4. Assign credential to ExplainerAgent, MermaidAgent, ChatAgent nodes
+4. Assign credential to ExplainerAgent, MermaidAgent, ChatAgent, PlannerAgent, ImagePromptAgent nodes
+5. Set variable `IMAGE_SERVICE_URL` (Settings → Variables) to cluster endpoint from `image_service/start.sh` output
 5. Publish + toggle Active
 
 ## Webhook API contract
@@ -21,7 +22,10 @@ Endpoint: `POST http://localhost:5678/webhook/arpx/orchestrate`
 
 ### stage: "explain"
 Request: `{stage, paper_excerpt: str, level: int 1-10, topics: list[str]}`
-Response: `{text_explanation: str, mermaid_code: str, debug: {stage, route}}`
+Response: `{text_explanation: str, mermaid_code: str, image_prompt: str, analogy_image: str (base64 PNG), planner_brief: str, debug: {stage, route}}`
+
+Explain flow: PlannerAgent → (ExplainerAgent + MermaidAgent + ImagePromptAgent→CallClusterAPI) parallel → MergeAll.
+`image_prompt` and `analogy_image` may be empty if cluster service is unreachable.
 
 ### stage: "chat"
 Request: `{stage, paper_excerpt: str, level: int, query: str, history: [{role, content}...]}`
@@ -43,6 +47,10 @@ mermaid.system                  # single prompt with embedded level-aware comple
 mermaid.user_template           # placeholders: {paper_excerpt}, {topics}, {level}
 chat.user_template              # placeholders: {paper_excerpt}, {level}, {query}
 chat.levels[1-10].system        # per-level chat system prompt
+planner.system                  # coordination brief generator
+planner.user_template           # placeholders: {paper_excerpt}, {topics}, {level}
+image_prompt.system             # visual analogy SD prompt generator
+image_prompt.user_template      # placeholders: {planner_brief}, {paper_excerpt}, {topics}, {level}
 ```
 
 Optimization writes to `explainer.levels[N].system`.

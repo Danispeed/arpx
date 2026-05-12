@@ -43,6 +43,12 @@ def init_db():
                    )
                    """)
 
+    for col in ("image_prompt", "analogy_image", "planner_brief"):
+        try:
+            cursor.execute(f"ALTER TABLE Explanations ADD COLUMN {col} TEXT")
+        except sqlite3.OperationalError:
+            pass
+
     connection.commit()
     connection.close()
 
@@ -83,12 +89,16 @@ def update_explanation(explanation_id, level=None, result=None):
     if result is not None:
         cursor.execute("""
             UPDATE Explanations
-            SET text_explanation = ?, mermaid_code = ?
+            SET text_explanation = ?, mermaid_code = ?,
+                image_prompt = ?, analogy_image = ?, planner_brief = ?
             WHERE id = ?
         """, (
             result.get("text_explanation"),
             result.get("mermaid_code"),
-            explanation_id
+            result.get("image_prompt", ""),
+            result.get("analogy_image", ""),
+            result.get("planner_brief", ""),
+            explanation_id,
         ))
     
     connection.commit()
@@ -112,7 +122,8 @@ def load_history():
     cursor = connection.cursor()
     
     cursor.execute("""
-                   SELECT id, chat_id, title, topics, level, text_explanation, mermaid_code, created_at
+                   SELECT id, chat_id, title, topics, level, text_explanation, mermaid_code,
+                          created_at, image_prompt, analogy_image, planner_brief
                    FROM Explanations
                    ORDER BY created_at DESC
                 """)
@@ -134,7 +145,10 @@ def load_history():
             "text_explanation": row[5],
             "mermaid_code": row[6],
             "created_at": row[7],
-            "messages": load_messages(explanation_id)
+            "image_prompt": row[8],
+            "analogy_image": row[9],
+            "planner_brief": row[10],
+            "messages": load_messages(explanation_id),
         })
     
     return history

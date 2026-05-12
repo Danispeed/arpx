@@ -24,9 +24,12 @@ def explain_paper(level, topics, chat_id):
     if not ping or ping.get("text_explanation") != "pong":
         return {
             "text_explanation": "Error Backend (n8n) is not reachable.",
-            "mermaid_code": ""
+            "mermaid_code": "",
+            "image_prompt": "",
+            "analogy_image": "",
+            "planner_brief": "",
         }
-    
+
     query = "Explain the main ideas of this research paper"
     explain_chunks = retrieve_chunks(query, chat_id)
     paper_excerpt = "\n\n".join(explain_chunks)
@@ -36,9 +39,12 @@ def explain_paper(level, topics, chat_id):
     if not result:
         return {
             "text_explanation": "Error: Failed to generate explanation",
-            "mermaid_code": ""
+            "mermaid_code": "",
+            "image_prompt": "",
+            "analogy_image": "",
+            "planner_brief": "",
         }
-    
+
     return result
 
 def generate_message_response(question, level, chat_id, history):

@@ -16,3 +16,9 @@ evals/cache/
 evals/reports/
 evals/papers/*
 !evals/papers/.gitkeep
+
+image_service/venv/
+image_service/server.pid
+image_service/server.port
+image_service/server.host
+image_service/server.log
