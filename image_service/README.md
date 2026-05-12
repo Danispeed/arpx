@@ -102,7 +102,6 @@ Local port `8765` is fixed by the tunnel — the URL does not change between ses
 |-------|-------|-----|
 | `ENOTFOUND c6-4.ifi.uit.no` | n8n cannot resolve cluster hostname | Run `tunnel.sh` |
 | `ECONNREFUSED 192.168.65.254:8765` | Tunnel closed (host slept or idle timeout) | Re-run `tunnel.sh` |
-| `404 Not Found` | Double `/generate` in n8n URL | Check URL has exactly one `/generate` |
 | `503 Model load failed` | GPU OOM or CUDA error | Check `server.log`, restart service |
 | `analogy_image` empty in response | Service unreachable — n8n continues without image | Fix tunnel, re-run explanation |
 
@@ -151,8 +150,6 @@ Response:
 |----------|---------|---------|
 | `IMAGE_MODEL` | `stabilityai/sdxl-turbo` | HuggingFace model ID |
 | `HF_HOME` | `~/hf_cache` | Model cache directory |
-| `ARPX_CLUSTER_USER` | `dsc019` | SSH username used by `tunnel.sh` |
-| `ARPX_CLUSTER_HOST` | `ificluster.ifi.uit.no` | Cluster SSH hostname used by `tunnel.sh` |
 
 ---
 
@@ -164,5 +161,3 @@ Response:
 | c6-8 | RTX 3090 | 24 GB |
 | c6-5 | RTX 2080 Ti | 11 GB |
 | c6-12 | RTX 2080 SUPER | 8 GB |
-
-Check current load: `/share/ifi/list-nodes-by-load.sh`
