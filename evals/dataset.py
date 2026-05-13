@@ -93,6 +93,9 @@ def load_eval_cases() -> list[dict]:
 
     for paper in spec["papers"]:
         path = paper["path"]
+        name = paper["name"]
+        chat_id = paper["chat_id"]
+        
         if not os.path.exists(path):
             print(f"  [skip] {path} not found — add the PDF to evals/papers/")
             continue
@@ -101,6 +104,8 @@ def load_eval_cases() -> list[dict]:
 
         for level in levels:
             cases.append({
+                "name": name,
+                "chat_id": chat_id,
                 "paper_path": path,
                 "expected_topics": paper.get("expected_topics", []),
                 "level": int(level),

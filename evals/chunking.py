@@ -8,52 +8,74 @@ import matplotlib.pyplot as plt
 import pandas as pd
 import os
 
-def chunking_experiment(text):
-    chunk_sizes = [100, 200, 300, 500]
-    
+
+chunk_sizes = [100, 200, 300, 500]
+
+def chunking_experiment(text, case, runs=5):
     results = []
+    for run in range(runs):
+        for size in chunk_sizes:
+            # Fixed
+            chunks = chunk_text_fixed(text, size)
+            results.append({
+                "run": run,
+                "method": "fixed",
+                "chunk_size": size,
+                "coherence": compute_coherence(chunks),
+                "separability": compute_separability(chunks)
+            })
+            
+            # Sliding (overlap is always 1/6 of the chunk size)
+            overlap = int(size / 6)
+            chunks = chunk_text_sliding(text, size, overlap)
+            results.append({
+                "run": run,
+                "method": "sliding",
+                "chunk_size": size,
+                "coherence": compute_coherence(chunks),
+                "separability": compute_separability(chunks)
+            })
+            
+            # LLM
+            chunks = chunk_text_llm(text, size)
+            results.append({
+                "run": run,
+                "method": "llm",
+                "chunk_size": size,
+                "coherence": compute_coherence(chunks),
+                "separability": compute_separability(chunks)
+            })
+            
+            # Sentence
+            num_sentences = int(size / 10)
+            chunks = chunk_text_sentence(text, num_sentences)
+            results.append({
+                "run": run,
+                "method": "sentence",
+                "chunk_size": size,
+                "coherence": compute_coherence(chunks),
+                "separability": compute_separability(chunks)
+            })
     
-    for size in chunk_sizes:
-        # Fixed
-        chunks = chunk_text_fixed(text, size)
-        results.append({
-            "method": "fixed",
-            "chunk_size": size,
-            "coherence": compute_coherence(chunks),
-            "separability": compute_separability(chunks)
-        })
-        
-        # Sliding (overlap is always 1/6 of the chunk size)
-        overlap = int(size / 6)
-        chunks = chunk_text_sliding(text, size, overlap)
-        results.append({
-            "method": "sliding",
-            "chunk_size": size,
-            "coherence": compute_coherence(chunks),
-            "separability": compute_separability(chunks)
-        })
-        
-        # LLM
-        chunks = chunk_text_llm(text, size)
-        results.append({
-            "method": "llm",
-            "chunk_size": size,
-            "coherence": compute_coherence(chunks),
-            "separability": compute_separability(chunks)
-        })
-        
-        # Sentence
-        num_sentences = int(size / 10)
-        chunks = chunk_text_sentence(text, num_sentences)
-        results.append({
-            "method": "sentence",
-            "chunk_size": size,
-            "coherence": compute_coherence(chunks),
-            "separability": compute_separability(chunks)
-        })
-    
-    plot_results(results)
+    df = pd.DataFrame(results)
+    summary = summarize_chunking_results(df)
+    filename = f"{case['name']}_chunking_evaluation.pdf"
+    plot_results(summary, filename)
     return results
+
+def summarize_chunking_results(df):
+    metrics = ["coherence", "separability"]
+    
+    summary = (
+        df.groupby(["method", "chunk_size"])[metrics]
+        .agg(["mean", "std"])
+    )
+    
+    summary.columns = [
+        "_".join(col).strip("_") for col in summary.columns.values
+    ]
+    
+    return summary.reset_index()
 
 def compute_coherence(chunks):
     scores = []
@@ -98,52 +120,40 @@ def compute_separability(chunks, max_pairs=1000):
     overall_score = 1 - (sum(similarities) / len(similarities)) if similarities else 0
     return overall_score
 
-def plot_results(results, filename="chunking_evaluation.pdf"):
-    df = pd.DataFrame(results)
-    
+def plot_results(df, filename):
     methods = df["method"].unique()
     
     fig, axes = plt.subplots(1, 2, figsize=(12, 5))
     
-    # Coherence
-    ax = axes[0]
-    for method in methods:
-        subset = df[df["method"] == method].sort_values("chunk_size")
+    metrics = ["coherence", "separability"]
+    
+    for i, metric in enumerate(metrics):
+        ax = axes[i]
         
-        ax.plot(
-            subset["chunk_size"],
-            subset["coherence"],
-            marker='o',
-            label=method
-        )
-    
-    ax.set_xlabel("Chunk Size")
-    ax.set_ylabel("Coherence")
-    ax.set_title("Coherence vs Chunk Size")
-    ax.legend()
-    ax.grid(False)
-    
-    # Separability
-    ax = axes[1]
-    for method in methods:
-        subset = df[df["method"] == method].sort_values("chunk_size")
+        mean_col = f"{metric}_mean"
+        std_col = f"{metric}_std"
         
-        ax.plot(
-            subset["chunk_size"],
-            subset["separability"],
-            marker="o",
-            label=method
-        )
+        for method in methods:
+            subset = df[df["method"] == method].sort_values("chunk_size")
+            
+            ax.errorbar(
+                subset["chunk_size"],
+                subset[mean_col],
+                yerr=subset[std_col],
+                marker="o",
+                capsize=5,
+                label=method
+            )
     
-    ax.set_xlabel("Chunk Size")
-    ax.set_ylabel("Separability")
-    ax.set_title("Separability vs Chunk Size")
-    ax.legend()
-    ax.grid(False)
-    
+        ax.set_xlabel("Chunk Size")
+        ax.set_ylabel(metric.title())
+        ax.set_title(f"{metric.title()} vs Chunk Size")
+        ax.legend()
+        ax.grid(False)
+        
     # Save to pdf
     plt.tight_layout()
-    save_path = os.path.join("evals", filename)
+    save_path = os.path.join("evals", "figures", filename)
     plt.savefig(save_path)
     
     plt.close()

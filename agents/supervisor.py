@@ -50,7 +50,7 @@ def explain_paper(level, topics, chat_id, run_eval=True):
     
     return result
 
-def generate_message_response(question, level, chat_id, history, retrieve_func, k):
+def generate_message_response(question, level, chat_id, history, retrieve_func, k_main, k_ref):
     ping = call_orchestrator("ping", None, None, None, None, None)
     
     if not ping or ping.get("text_explanation") != "pong":
@@ -59,7 +59,7 @@ def generate_message_response(question, level, chat_id, history, retrieve_func, 
             "mermaid_code": ""
         }
     
-    relevant_chunks = retrieve_func(question, chat_id, k)
+    relevant_chunks = retrieve_func(question, chat_id, k_main, k_ref)
     paper_excerpt = "\n\n".join(relevant_chunks)
     
     result = call_orchestrator("chat", paper_excerpt, level, None, question, history)

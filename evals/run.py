@@ -24,6 +24,13 @@ from evals.dataset import load_eval_cases
 from evals.generate import generate_explanation, generate_mermaid
 from evals.graders import mermaid as mermaid_grader
 from evals.graders import rubric as rubric_grader
+from evals.indexing import ensure_indexed
+from evals.rag_types import run_rag_evaluation
+from evals.retrieved_chunks import run_full_k_experiment
+from evals.retrieval_ratio import run_full_reference_ratio_experiment
+from evals.chunking import chunking_experiment
+from rag.utils import extract_text_from_pdf
+from rag.weaviate_db import create_schema
 
 _REGRESSION_THRESHOLD = 0.2
 _COMPARISON_MODELS = [
@@ -60,6 +67,14 @@ def _run_one_case(case: dict) -> dict:
         "rubric": rubric_result,
         "mermaid": mermaid_result,
     }
+
+def _unique_cases(cases):
+    unique = {}
+    
+    for case in cases:
+        unique[case["chat_id"]] = case
+    
+    return list(unique.values())
 
 
 async def _run_all_async(cases: list[dict]) -> list[dict]:
@@ -318,12 +333,64 @@ def cmd_check_baseline(args) -> None:
     if had_regression:
         sys.exit(2)
 
+def cmd_index(args) -> None:
+    create_schema()
+    cases = _unique_cases(load_eval_cases())
+    
+    for case in cases:
+        print(f"\nChecking if {case['name']} is indexed")
+        ensure_indexed(case)
+    print("\nDone.")
+
+def cmd_rag_eval(args):
+    cases = _unique_cases(load_eval_cases())
+    
+    for case in cases:
+        print(f"\nRunning RAG eval for {case['name']}")
+        ensure_indexed(case)
+        
+        run_rag_evaluation(case)
+
+def cmd_k_sweep(args):
+    cases = _unique_cases(load_eval_cases())
+    
+    for case in cases:
+        print(f"\nRunning k-sweep for {case['name']}")
+        ensure_indexed(case)
+        run_full_k_experiment(case)
+    
+    print("\nDone.")
+
+def cmd_reference_ratio(args):
+    cases = _unique_cases(load_eval_cases())
+    
+    for case in cases:
+        print(f"\nRunning reference-ratio eval for {case['name']}")
+        ensure_indexed(case)
+        run_full_reference_ratio_experiment(case)
+    
+    print("\nDone.")
+
+def cmd_chunking(args):
+    cases = _unique_cases(load_eval_cases())
+    
+    for case in cases:
+        print(f"\nRunning chunking eval for {case['name']}")
+        
+        with open(case["paper_path"], "rb") as paper:
+            text = extract_text_from_pdf(paper)
+        
+        chunking_experiment(text, case)
+    
+    print("\nDone.")
 
 def main() -> None:
     parser = argparse.ArgumentParser(description="ARPX eval runner")
     sub = parser.add_subparsers(dest="command")
 
+    sub.add_parser("index", help="Index benchmark papers into Weaviate")
     sub.add_parser("estimate", help="Dry-run cost estimate")
+
 
     eval_p = sub.add_parser("evaluate", help="Run full eval and save report")
     eval_p.add_argument("--model", help="Override generator model (env: ARPX_GENERATOR_MODEL)")
@@ -334,10 +401,17 @@ def main() -> None:
     cmp_p.add_argument("--levels", type=int, nargs="+", default=[1, 5], help="Levels to evaluate (default: 1 5)")
 
     sub.add_parser("check-baseline", help="Compare latest report to baseline")
+    
+    sub.add_parser("rag-eval", help="Run RAG type evaluation")
+    sub.add_parser("k-sweep", help="Run retrieval k sweep experiment")
+    sub.add_parser("reference-ratio", help="Run reference ratio experiment")
+    sub.add_parser("chunking", help="Run chunking experiment")
 
     args = parser.parse_args()
 
-    if args.command == "estimate":
+    if args.command == "index":
+        cmd_index(args)
+    elif args.command == "estimate":
         cmd_estimate(args)
     elif args.command == "evaluate":
         cmd_evaluate(args)
@@ -345,6 +419,14 @@ def main() -> None:
         cmd_compare_models(args)
     elif args.command == "check-baseline":
         cmd_check_baseline(args)
+    elif args.command == "rag-eval":
+        cmd_rag_eval(args)
+    elif args.command == "k-sweep":
+        cmd_k_sweep(args)
+    elif args.command == "reference-ratio":
+        cmd_reference_ratio(args)
+    elif args.command == "chunking":
+        cmd_chunking(args)
     else:
         parser.print_help()
 

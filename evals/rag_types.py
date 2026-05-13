@@ -1,12 +1,10 @@
 from rag.rag_types import retrieve_chunks_naive, retrieve_chunks_llm_query, retrieve_chunks_fusion
-from datasets import Dataset
 import os
 from rag.embeddings import embed_chunks
 import numpy as np
 from dotenv import load_dotenv
 from openai import AzureOpenAI
 import pandas as pd
-import matplotlib.pyplot as plt
 
 load_dotenv()
 
@@ -22,41 +20,35 @@ rag_methods = {
     "fusion": retrieve_chunks_fusion
 }
 
-# Specified for Pesto paper
-questions = [
-    "What problem does Pesto solve?",
-    "Why are SMR-based BFT systems inefficient?",
-    "How does Pesto ensure serializability without total ordering?",
-    "What is the snapshot protocol used for?",
-    "How does Pesto handle concurrency control?",
-    "What performance improvements does Pesto achieve?"
-]
 
-def set_up_rag_experiment(chat_id):
+def set_up_rag_experiment(chat_id, case, runs=5):
     results = []
     
-    for rag_name, retrieve_func in rag_methods.items():
-        for question in questions:
-            chunks = retrieve_func(question, chat_id)
-            
-            from agents.supervisor import generate_message_response
-            response = generate_message_response(
-                question,
-                5,
-                chat_id,
-                [],
-                retrieve_func,
-                5
-            )
-            
-            answer = response["text_explanation"]
-            
-            results.append({
-                "rag_type": rag_name,
-                "question": question,
-                "answer": answer,
-                "contexts": chunks
-            })
+    for run in range(runs):
+        for rag_name, retrieve_func in rag_methods.items():
+            for question in case["questions"]:
+                chunks = retrieve_func(question, chat_id, 4, 1)
+                
+                from agents.supervisor import generate_message_response
+                response = generate_message_response(
+                    question,
+                    5,
+                    chat_id,
+                    [],
+                    retrieve_func,
+                    4,
+                    1
+                )
+                
+                answer = response["text_explanation"]
+                
+                results.append({
+                    "run": run,
+                    "rag_type": rag_name,
+                    "question": question,
+                    "answer": answer,
+                    "contexts": chunks
+                })
     
     return results
 
@@ -213,24 +205,34 @@ def compute_context_precision(question, contexts):
 
 
 def summarize_results(df):
-    return df.groupby("rag_type").mean().reset_index()
+    metrics = ["faithfulness", "answer_relevancy", "context_precision"]
+    summary = (
+        df.groupby("rag_type")[metrics]
+        .agg(["mean", "std"])
+    )
+    
+    summary.columns = [
+        "_".join(col).strip("_") for col in summary.columns.values
+    ]
+    
+    return summary.reset_index()
 
-def save_rag_results_table(summary, filename="rag_evaluation.csv"):
-    save_path = os.path.join("evals", filename)
+def save_rag_results_table(summary, filename):
+    save_path = os.path.join("evals", "figures", filename)
     
     # Round values for readability
     summary_rounded = summary.round(3)
     
     summary_rounded.to_csv(save_path, index=False)
 
-def run_rag_evaluation(chat_id):
-    results = set_up_rag_experiment(chat_id)
+def run_rag_evaluation(chat_id, case):
+    results = set_up_rag_experiment(chat_id, case)
     
     df = evaluate_rag(results)
     
     summary = summarize_results(df)
-    
-    save_rag_results_table(summary)
+    filename = f"{case['name']}_rag_evaluation.csv"
+    save_rag_results_table(summary, filename)
     
     return
 

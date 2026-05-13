@@ -8,13 +8,10 @@ import requests
 import io
 
 # Index both the main paper and the referenced papers
-def index_papers(paper, chat_id, num_refernces, run_eval=False):
+def index_papers(paper, chat_id, num_refernces):
     # Begin with main paper
     # Extract text
     text = extract_text_from_pdf(paper)  
-    
-    if run_eval:
-        chunking_experiment(text)
     
     # Chunk text
     chunks = chunk_text_sliding(text, 300, 50)
@@ -70,13 +67,12 @@ def index_papers(paper, chat_id, num_refernces, run_eval=False):
             store_chunks(abstract_chunks, abstract_embeddings, "reference", chat_id)
         
 
-def retrieve_chunks(query, chat_id, k):
+def retrieve_chunks(query, chat_id, k_main, k_ref):
     # Embed query
     query_embedding = embed_chunks([query])[0]
     
     # Retrieve relevant chunks
-    k_ref = int(k / 3)
-    retrieved_chunks = query_chunks(query_embedding, chat_id, k, k_ref)
+    retrieved_chunks = query_chunks(query_embedding, chat_id, k_main, k_ref)
     
     return retrieved_chunks
      

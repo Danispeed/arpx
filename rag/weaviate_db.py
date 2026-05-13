@@ -2,10 +2,10 @@ import weaviate
 import weaviate.classes as wvc
 
 client = weaviate.connect_to_custom(
-    http_host="weaviate",
+    http_host="localhost",
     http_port=8080,
     http_secure=False,
-    grpc_host="weaviate",
+    grpc_host="localhost",
     grpc_port=50051,
     grpc_secure=False,
 )
@@ -92,6 +92,16 @@ def query_chunks(query_embedding, chat_id, top_k_main, top_k_ref):
     combined = main_results.objects + reference_results.objects
     
     return [obj.properties["text"] for obj in combined]
+
+def is_indexed(chat_id):
+    collection = client.collections.get("PaperChunk")
+    
+    response = collection.query.fetch_objects(
+        limit=1,
+        filters=wvc.query.Filter.by_property("chat_id").equal(chat_id)
+    )
+    
+    return len(response.objects) > 0
     
 
 # Weaviate returns:

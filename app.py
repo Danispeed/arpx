@@ -37,11 +37,6 @@ if "chat_messages" not in st.session_state:
     
 init_db()
 
-# Only for testing. Clear weaviate database for each run
-if "weaviate_db_cleared" not in st.session_state:
-    clear()
-    st.session_state.weaviate_db_cleared = True
-
 st.title("ARPX - Adaptive Research Paper Explainer")
 st.write("Upload a research paper and get a tailored explanation!")
 
@@ -198,7 +193,8 @@ if st.session_state.explained:
                 st.session_state.chat_id,
                 st.session_state.chat_messages,
                 retrieve_chunks_fusion,
-                5
+                4,
+                1
             )
             
             response_text = result.get("text_explanation")
