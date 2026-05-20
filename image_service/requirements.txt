@@ -1,7 +1,9 @@
 fastapi
 uvicorn[standard]
-diffusers>=0.27.0
+diffusers>=0.30.0
 torch
 transformers
 accelerate
 Pillow
+sentencepiece
+protobuf

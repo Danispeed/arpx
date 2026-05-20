@@ -40,7 +40,7 @@ chat.user_template              # placeholders: {paper_excerpt}, {level}, {query
 chat.levels[1-10].system        # per-level chat system prompt
 planner.system                  # coordination brief generator
 planner.user_template           # placeholders: {paper_excerpt}, {topics}, {level}
-image_prompt.system             # visual analogy SD prompt generator
+image_prompt.system             # visual analogy image prompt generator
 image_prompt.user_template      # placeholders: {planner_brief}, {paper_excerpt}, {topics}, {level}
 ```
 

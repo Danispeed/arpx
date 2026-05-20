@@ -12,7 +12,7 @@ logging.basicConfig(level=logging.INFO)
 
 app = FastAPI(title="ARPX Image Service")
 
-_MODEL_ID = os.getenv("IMAGE_MODEL", "stabilityai/sdxl-turbo")
+_MODEL_ID = os.getenv("IMAGE_MODEL", "black-forest-labs/FLUX.1-schnell")
 _pipe = None
 
 
@@ -33,16 +33,14 @@ def _get_pipe():
     if _pipe is not None:
         return _pipe
 
-    from diffusers import AutoPipelineForText2Image
+    from diffusers import FluxPipeline
 
     logger.info("Loading %s ...", _MODEL_ID)
-    _pipe = AutoPipelineForText2Image.from_pretrained(
+    _pipe = FluxPipeline.from_pretrained(
         _MODEL_ID,
-        torch_dtype=torch.float16,
-        variant="fp16",
+        torch_dtype=torch.bfloat16,
     )
-    _pipe.to("cuda")
-    _pipe.safety_checker = None
+    _pipe.enable_model_cpu_offload()
     logger.info("Model loaded on %s", torch.cuda.get_device_name(0))
     return _pipe
 
@@ -73,6 +71,7 @@ def generate(req: GenerateRequest):
             guidance_scale=0.0,
             width=req.width,
             height=req.height,
+            max_sequence_length=256,
         )
         image = result.images[0]
 

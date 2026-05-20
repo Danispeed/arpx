@@ -491,19 +491,19 @@ planner:
     Your brief MUST contain exactly three things:
     1. CORE IDEA: The paper's central contribution in one sentence.
     2. METAPHOR: A concrete visual analogy appropriate for a level {level} reader.
-       - Level 1-3: ONE object-only scene. NO humans, people, chefs, scientists,
-         workers — SD cannot reliably render person counts. Use objects and animals.
+       - Level 1-3: ONE object-only scene using objects or animals, no people.
          Examples: "a single filing cabinet whose drawers auto-sort and label
          themselves" (self-organizing data), "a beehive where each cell seals
          itself when full" (distributed storage), "a single LEGO set snapping
          together automatically without hands" (automated assembly).
-       - Level 4-7: Domain-relevant scene with concrete props, minimal or no people.
+       - Level 4-7: Domain-relevant scene with concrete props, no people.
          Examples: "interlocking gears synchronising a clock" (consensus protocols),
          "interconnected puzzle pieces snapping into a dark pattern" (criminal network),
          "a web of locks and keys linked by glowing chains" (access control).
-         AVOID inherently photorealistic subjects — SD will ignore illustration style
-         tags for these. Banned for L4-7: circuit boards, PCBs, microchips, wiring,
-         photography subjects (insects under macro, real materials), human faces.
+         AVOID inherently photorealistic subjects — the model will default to
+         realism for these. Banned for L4-7: circuit boards, PCBs, microchips,
+         wiring, photography subjects (insects under macro, real materials),
+         human faces.
        - Level 8-10: Abstract single concept, no people.
          Examples: "converging beams of light forming a single point",
          "fractal branching into self-similarity".
@@ -512,13 +512,14 @@ planner:
          physics, etc.) — no generic "progress" or "old vs new" imagery.
        - BANNED clichés: highways/traffic, mountains, bridges, journeys, oceans,
          generic city skylines, generic factory/machine, brain/lightbulb, kitchen,
-         chef, cooking — these produce cluttered multi-person scenes in SD.
+         chef, cooking — these produce cluttered unfocused scenes.
        - BANNED collection subjects: bookshelves, libraries, warehouses, rows of
-         objects, grids, arrays, racks, shelves — SD renders these as complex
+         objects, grids, arrays, racks, shelves — these produce complex
          multi-section scenes with no single focal point. Say "one book that opens
          to reveal glowing pages" not "a bookshelf of books". One instance only.
        - Must have ONE simple object as the focal subject — not a collection,
          not an array, not a shelf of things. One gear, one cell, one lock, one seed.
+       - NO humans, people, chefs, scientists, workers in the scene.
        - For abstract papers (surveys, position papers, research agendas): pick a
          metaphor for the CORE structural idea, not the surface narrative of the
          explanation text.
@@ -543,57 +544,53 @@ planner:
 image_prompt:
   system: |
     You are the Visual Analogy agent of ARPX. Convert the planner's METAPHOR
-    into ONE SDXL Turbo prompt. The metaphor is FIXED — do not invent a new one.
+    into ONE image generation prompt. The metaphor is FIXED — do not invent a new one.
 
     PURPOSE: Create a visual metaphor that helps the reader intuitively grasp the
     paper's core idea. This is NOT a technical diagram — the Mermaid agent handles
     that. Your image should evoke understanding through concrete, memorable imagery.
 
-    FORMAT (SDXL Turbo works best with short comma-separated tags, NOT prose):
-      [quality tags], [focal subject], [composition], [setting/mood], [style tag]
+    FORMAT: Write a concise natural-language scene description (20-40 words).
+    Describe the focal subject, its composition, the background, and the style.
 
-    Example output for L1: "clean simple illustration, single open book with
-    glowing pages fanning outward, centered subject, soft white background,
-    flat cartoon style"
+    Example output for L1: "A friendly illustration of a single open book with
+    glowing pages fanning outward, centered on a soft white background, in a
+    simple cartoon style."
 
-    Example output for L5: "isometric illustration, interlocking brass gears
-    synchronising a pocket watch, centered composition, soft blue background,
-    clean infographic style"
+    Example output for L5: "A clean isometric illustration of interlocking brass
+    gears synchronising inside a pocket watch, centered on a soft blue background."
 
-    Example output for L9: "minimalist conceptual art, beams of light converging
-    to a single point, centered symmetry, deep black background, abstract digital art"
+    Example output for L9: "Minimalist abstract art of luminous beams converging
+    to a single bright point, centered symmetrically against a deep black background."
 
-    LEVEL-BASED STYLE (locked):
-    - L1-3: end with one of "flat cartoon style", "children's book style",
-      "minimalist illustration". BANNED words: detailed, complex, sprawling,
-      intricate, semi-realistic, photorealistic, cinematic.
-    - L4-7: end with one of "clean illustration", "infographic style",
-      "isometric illustration". Moderate detail OK; composition stays focused.
-    - L8-10: end with one of "conceptual art", "minimalist 3d render",
-      "abstract digital art".
+    LEVEL-BASED STYLE:
+    - L1-3: Simple, friendly illustration style. Keep it approachable and clean.
+      Aim for "flat cartoon style", "children's book style", or "minimalist
+      illustration". BANNED words: detailed, complex, sprawling, intricate,
+      semi-realistic, photorealistic, cinematic.
+    - L4-7: Clean technical or isometric illustration. Moderate detail, focused
+      composition. Aim for "clean illustration", "infographic style", or
+      "isometric illustration".
+    - L8-10: Abstract minimalist art or conceptual digital art. Aim for
+      "conceptual art", "minimalist 3d render", or "abstract digital art".
 
     HARD RULES:
     - Output ONLY the prompt text. Nothing else — no labels, no quotes, no preamble.
-    - 20-40 words total. Comma-separated tags, NOT full sentences.
-    - Start with quality tags: "clean simple illustration" (L1-3),
-      "clean illustration" (L4-7), "minimalist conceptual art" (L8-10).
-    - Always include a composition tag: "centered subject", "centered composition",
-      or "centered symmetry".
-    - Always include a background tag: "{color} background" or "clean background".
-    - Use the planner's METAPHOR verbatim as the focal subject. Do not reinterpret.
+    - 20-40 words total.
+    - The scene must have a clear focal subject, centered in the composition.
+    - Always specify a background (e.g. "on a soft white background").
+    - Use the planner's METAPHOR as the focal subject. Do not reinterpret it.
     - NO text, labels, equations, charts, or diagrams in the scene.
-    - NO paper titles, author names, acronyms (e.g. "MapReduce", "RDBMS").
-    - NO humans, people, chefs, scientists, workers, or any person in the scene —
-      Stable Diffusion cannot reliably render exact person counts and produces
-      crowded multi-person scenes. Use objects, machines, animals, or abstract
-      forms only.
+    - NO paper titles, author names, or acronyms (e.g. "MapReduce", "RDBMS").
+    - NO humans, people, chefs, scientists, workers, or any person in the scene.
+      Use objects, machines, animals, or abstract forms only.
     - NO collection subjects: bookshelves, rows of books, libraries, warehouses,
-      grids, arrays, racks — SD renders these as cluttered multi-section scenes.
+      grids, arrays, racks — these produce cluttered multi-section scenes.
       Use ONE instance of the subject (one book, one gear, one cell, one seed).
     - NO banned clichés: highway, traffic, mountain, bridge, journey, ocean,
       generic city, generic factory, brain, lightbulb, kitchen, cooking.
-    - Proofread: no truncated/merged words (e.g. "cityscapold"), no broken
-      punctuation. Re-read your output before emitting.
+    - Proofread: no truncated/merged words, no broken punctuation. Re-read
+      your output before emitting.
 
   user_template: |
     Planner brief:
@@ -611,5 +608,5 @@ image_prompt:
     Reader level (1-10): {level}
 
 
-    Generate one Stable Diffusion image prompt that creates a visual analogy for this
-    paper's core idea, calibrated to level {level}.
+    Generate one image prompt that creates a visual analogy for this paper's
+    core idea, calibrated to level {level}.

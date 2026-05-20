@@ -1,6 +1,6 @@
 # ARPX Image Service
 
-FastAPI service for generating visual analogy images using SDXL Turbo.
+FastAPI service for generating visual analogy images using FLUX.1 Schnell.
 Runs on a UiT ificluster GPU node — outside the Docker stack.
 
 ## Architecture
@@ -12,7 +12,7 @@ Docker stack (app + weaviate + n8n)
 SSH tunnel  (tunnel.sh)
         ↓  forwarded through ificluster
 GPU node (c6-4, c6-8, etc.)
-  └── uvicorn server:app  →  SDXL Turbo  →  base64 PNG
+  └── uvicorn server:app  →  FLUX.1 Schnell  →  base64 PNG
 ```
 
 The Docker network has no direct route to ificluster. `tunnel.sh` forwards
@@ -36,13 +36,26 @@ source venv/bin/activate
 pip install -r requirements.txt
 ```
 
-Pre-download the model (~6.5 GB, cached in `~/hf_cache`):
+FLUX.1 Schnell is a gated model. Authenticate with HuggingFace before downloading:
+
+1. Accept the license at https://huggingface.co/black-forest-labs/FLUX.1-schnell
+2. Create a token at https://huggingface.co/settings/tokens (read permission)
+3. Login on the cluster:
 
 ```bash
-HF_HOME=~/hf_cache python -c "from diffusers import AutoPipelineForText2Image; AutoPipelineForText2Image.from_pretrained('stabilityai/sdxl-turbo', variant='fp16')"
+pip install -U huggingface_hub
+huggingface-cli login
+```
+
+Pre-download the model (~24 GB, cached in `~/hf_cache`):
+
+```bash
+HF_HOME=~/hf_cache python -c "from diffusers import FluxPipeline; FluxPipeline.from_pretrained('black-forest-labs/FLUX.1-schnell', torch_dtype=__import__('torch').bfloat16)"
 ```
 
 `pip install` downloads ~2 GB (PyTorch + CUDA). Can take long time due to DFS.
+
+FLUX.1 Schnell requires ~24 GB VRAM and uses CPU offload for text encoders. Only RTX 3090 nodes (c6-4, c6-8) have enough VRAM.
 
 ### Per session
 
@@ -120,7 +133,7 @@ cat ~/arpx/image_service/server.pid && ps aux | grep uvicorn
 ### `GET /health`
 
 ```json
-{"status": "ok", "gpu": "NVIDIA GeForce RTX 3090", "model": "stabilityai/sdxl-turbo", "model_loaded": false}
+{"status": "ok", "gpu": "NVIDIA GeForce RTX 3090", "model": "black-forest-labs/FLUX.1-schnell", "model_loaded": false}
 ```
 
 `model_loaded` is `false` until the first `/generate` request (lazy load).
@@ -130,7 +143,7 @@ cat ~/arpx/image_service/server.pid && ps aux | grep uvicorn
 Request:
 ```json
 {
-  "prompt": "clean simple illustration, single beehive with glowing cells, centered, flat cartoon style",
+  "prompt": "A friendly illustration of a single beehive with glowing hexagonal cells, centered on a soft white background, in a simple cartoon style.",
   "steps": 4,
   "width": 1024,
   "height": 1024
@@ -148,7 +161,7 @@ Response:
 
 | Variable | Default | Purpose |
 |----------|---------|---------|
-| `IMAGE_MODEL` | `stabilityai/sdxl-turbo` | HuggingFace model ID |
+| `IMAGE_MODEL` | `black-forest-labs/FLUX.1-schnell` | HuggingFace model ID |
 | `HF_HOME` | `~/hf_cache` | Model cache directory |
 
 ---

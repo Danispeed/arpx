@@ -55,14 +55,14 @@ Shared output constraints in `shared.constraints`.
 
 ## Visual Analogy Agent (image generation)
 
-Pipeline: PlannerAgent (LLM brief) → ImagePromptAgent (LLM → SD prompt) → CallClusterAPI → base64 PNG.
+Pipeline: PlannerAgent (LLM brief) → ImagePromptAgent (LLM → image prompt) → CallClusterAPI → base64 PNG.
 
 All orchestrated in n8n. Runs parallel with Explainer + Mermaid inside explain stage.
 PlannerAgent produces ~100 word brief shared by all three agents for cohesion.
 `image_prompt` and `analogy_image` may be empty if cluster service is unreachable.
 
 Image service: FastAPI in `image_service/` — runs on ificluster GPU node, NOT in Docker stack.
-Model: SDXL Turbo (`stabilityai/sdxl-turbo`, fp16). Lazy-loaded on first `/generate` request.
+Model: FLUX.1 Schnell (`black-forest-labs/FLUX.1-schnell`, bf16). Lazy-loaded on first `/generate` request. Uses CPU offload to fit 12B params within 24 GB VRAM.
 Dynamic port allocation; PID/port files on shared filesystem readable from any node.
 
 API: `GET /health`, `POST /generate` → `{image: base64_PNG, prompt: str}`.
@@ -70,16 +70,16 @@ Params: `prompt`, `steps` (default 4), `width`/`height` (default 1024).
 
 Env vars (image service):
 - `IMAGE_SERVICE_URL` — set in n8n UI (Settings → Variables), points to `http://<node>:<port>`
-- `IMAGE_MODEL` — override model ID (default `stabilityai/sdxl-turbo`)
+- `IMAGE_MODEL` — override model ID (default `black-forest-labs/FLUX.1-schnell`)
 - `HF_HOME` — model cache dir (default `~/hf_cache`)
 
-GPU nodes:
-| Node | GPU | VRAM |
-|------|-----|------|
-| c6-4 | RTX 3090 | 24 GB |
-| c6-8 | RTX 3090 | 24 GB |
-| c6-5 | RTX 2080 Ti | 11 GB |
-| c6-12 | RTX 2080 SUPER | 8 GB |
+GPU nodes (FLUX.1 Schnell requires 24 GB VRAM — only c6-4 and c6-8 are viable):
+| Node | GPU | VRAM | FLUX compatible |
+|------|-----|------|-----------------|
+| c6-4 | RTX 3090 | 24 GB | Yes |
+| c6-8 | RTX 3090 | 24 GB | Yes |
+| c6-5 | RTX 2080 Ti | 11 GB | No |
+| c6-12 | RTX 2080 SUPER | 8 GB | No |
 
 One-time setup: create venv, `pip install -r image_service/requirements.txt`, pre-download model. See `image_service/README.md`.
 Per session: `./image_service/start.sh [node]` → copy URL to n8n variable, `./image_service/stop.sh` when done.

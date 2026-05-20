@@ -12,7 +12,7 @@ The system uses Retrieval-Augmented Generation (RAG), a vector database (Weaviat
 - Semantic search using vector embeddings (Weaviate)
 - RAG-augmented context from main paper + referenced papers (Semantic Scholar)
 - Mermaid diagrams for structural/logical visualization
-- Visual analogy images via Stable Diffusion (SDXL Turbo on GPU cluster)
+- Visual analogy images via FLUX.1 Schnell (on GPU cluster)
 - Follow-up chat with conversation history
 - Explanation history with SQLite persistence
 - Modular multi-agent architecture orchestrated by n8n
@@ -32,7 +32,7 @@ The system is composed of three primary components:
   - Coordinates LLM agents: Planner, Explainer, Mermaid, ImagePrompt, Chat
 - **Image generation service**
   - FastAPI on university GPU cluster (ificluster)
-  - SDXL Turbo for visual analogy generation
+  - FLUX.1 Schnell for visual analogy generation
 
 ## Running the project (Docker)
 
@@ -84,7 +84,7 @@ The image service on the GPU cluster uses its own env vars — see [`image_servi
    - **PlannerAgent** — creates a coordination brief for cohesion across agents
    - **ExplainerAgent** — generates an adaptive text explanation
    - **MermaidAgent** — generates a structural diagram
-   - **ImagePromptAgent** → **GPU cluster** — generates a visual analogy image via Stable Diffusion
+   - **ImagePromptAgent** → **GPU cluster** — generates a visual analogy image via FLUX.1 Schnell
 9. Results are displayed in the Streamlit interface.
 10. User can ask follow-up questions via the chat agent.
 
@@ -112,7 +112,7 @@ N8N --> Planner[PlannerAgent]
 Planner --> Explain[ExplainerAgent]
 Planner --> Diagram[MermaidAgent]
 Planner --> ImgPrompt[ImagePromptAgent]
-ImgPrompt --> GPU[GPU Cluster - SDXL Turbo]
+ImgPrompt --> GPU[GPU Cluster - FLUX.1 Schnell]
 Explain --> UI
 Diagram --> UI
 GPU --> UI
