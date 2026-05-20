@@ -29,7 +29,6 @@ from evals.rag_types import run_rag_evaluation
 from evals.retrieved_chunks import run_full_k_experiment
 from evals.retrieval_ratio import run_full_reference_ratio_experiment
 from evals.chunking import chunking_experiment
-from rag.utils import extract_text_from_pdf
 from rag.weaviate_db import create_schema
 
 _REGRESSION_THRESHOLD = 0.2
@@ -349,7 +348,7 @@ def cmd_rag_eval(args):
         print(f"\nRunning RAG eval for {case['name']}")
         ensure_indexed(case)
         
-        run_rag_evaluation(case)
+    run_rag_evaluation(cases)
 
 def cmd_k_sweep(args):
     cases = _unique_cases(load_eval_cases())
@@ -357,8 +356,8 @@ def cmd_k_sweep(args):
     for case in cases:
         print(f"\nRunning k-sweep for {case['name']}")
         ensure_indexed(case)
-        run_full_k_experiment(case)
     
+    run_full_k_experiment(cases)
     print("\nDone.")
 
 def cmd_reference_ratio(args):
@@ -367,8 +366,8 @@ def cmd_reference_ratio(args):
     for case in cases:
         print(f"\nRunning reference-ratio eval for {case['name']}")
         ensure_indexed(case)
-        run_full_reference_ratio_experiment(case)
     
+    run_full_reference_ratio_experiment(cases)
     print("\nDone.")
 
 def cmd_chunking(args):
@@ -376,11 +375,9 @@ def cmd_chunking(args):
     
     for case in cases:
         print(f"\nRunning chunking eval for {case['name']}")
+        ensure_indexed(case)
         
-        with open(case["paper_path"], "rb") as paper:
-            text = extract_text_from_pdf(paper)
-        
-        chunking_experiment(text, case)
+    chunking_experiment(cases)
     
     print("\nDone.")
 

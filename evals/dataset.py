@@ -108,6 +108,7 @@ def load_eval_cases() -> list[dict]:
                 "chat_id": chat_id,
                 "paper_path": path,
                 "expected_topics": paper.get("expected_topics", []),
+                "questions": paper.get("questions", []),
                 "level": int(level),
                 "paper_excerpt": excerpts["explain"],
                 "topics_context": excerpts["topics"],

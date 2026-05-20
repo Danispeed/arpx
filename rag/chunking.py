@@ -3,6 +3,9 @@ from rag.utils import split_into_sentences
 import os
 from dotenv import load_dotenv
 import ast
+import json
+
+os.environ["TOKENIZERS_PARALLELISM"] = "false"
 
 load_dotenv()
 
@@ -63,23 +66,24 @@ def chunk_text_llm(text, chunk_size):
     prompt = f"""
     You are an expert in analyzing academic research papers.
 
-    Your task is to split the following text into semantically meaningful chunks.
+    Split the text into semantically meaningful chunks.
 
     Requirements:
-    - Each chunk must represent ONE coherent idea or concept
-    - Do NOT break sentences in the middle
-    - Combine related sentences into the same chunk
-    - Keep chunks reasonably sized (around {chunk_size} words long)
+    - Each chunk must represent ONE coherent idea
+    - Do NOT split sentences
+    - Combine related sentences
+    - Aim for about {chunk_size} words per chunk
     - Avoid redundancy
 
-    Output format:
-    - Return ONLY a Python list of strings
-    - Do NOT include explanations
-    - Do NOT include numbering
-    - Do NOT include markdown
+    Return ONLY valid JSON.
 
-    Example:
-    ["Chunk 1 text...", "Chunk 2 text..."]
+    Format:
+    {{
+    "chunks": [
+        "chunk text 1",
+        "chunk text 2"
+    ]
+    }}
 
     Text:
     {text}
@@ -87,6 +91,7 @@ def chunk_text_llm(text, chunk_size):
     
     response = client.chat.completions.create(
         model=(os.getenv("AZURE_OPENAI_DEPLOYMENT") or "").strip(),
+        response_format={"type": "json_object"},
         messages=[
             {"role": "user", "content": prompt}
         ]
@@ -94,19 +99,21 @@ def chunk_text_llm(text, chunk_size):
     content = response.choices[0].message.content.strip()
     
     # Remove markdown if present
-    content = content.replace("```python", "").replace("```", "").strip()
+    content = content.replace("```json", "").replace("```python", "").replace("```", "").strip()
     
     try:
-        chunks = ast.literal_eval(content)
-        
+        data = json.loads(content)
+        chunks = data["chunks"]
+
         if not isinstance(chunks, list):
-            raise ValueError("Output is not a list")
-        
+            raise ValueError("chunks is not a list")
+
         if not all(isinstance(chunk, str) for chunk in chunks):
-            raise ValueError("Chunks are not all strings")
+            raise ValueError("chunks must contain only strings")
 
         return chunks
 
     except Exception as e:
+        print("RAW OUTPUT:", repr(content))
         print("LLM chunking failed:", e)
-        return [text] # fallback
+        return [text]

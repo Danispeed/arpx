@@ -1,7 +1,7 @@
 import numpy as np
 from rag.chunking import chunk_text_fixed, chunk_text_llm, chunk_text_sentence, chunk_text_sliding
 from itertools import combinations
-from rag.utils import split_into_sentences
+from rag.utils import split_into_sentences, extract_text_from_pdf
 from rag.embeddings import embed_chunks
 import random
 import matplotlib.pyplot as plt
@@ -11,56 +11,60 @@ import os
 
 chunk_sizes = [100, 200, 300, 500]
 
-def chunking_experiment(text, case, runs=5):
+def chunking_experiment(cases, runs=5):
     results = []
-    for run in range(runs):
-        for size in chunk_sizes:
-            # Fixed
-            chunks = chunk_text_fixed(text, size)
-            results.append({
-                "run": run,
-                "method": "fixed",
-                "chunk_size": size,
-                "coherence": compute_coherence(chunks),
-                "separability": compute_separability(chunks)
-            })
+    for case in cases:
+        with open(case["paper_path"], "rb") as paper:
+            print("Doing chunking experiment on paper:", case["name"])
+            text = extract_text_from_pdf(paper)
             
-            # Sliding (overlap is always 1/6 of the chunk size)
-            overlap = int(size / 6)
-            chunks = chunk_text_sliding(text, size, overlap)
-            results.append({
-                "run": run,
-                "method": "sliding",
-                "chunk_size": size,
-                "coherence": compute_coherence(chunks),
-                "separability": compute_separability(chunks)
-            })
-            
-            # LLM
-            chunks = chunk_text_llm(text, size)
-            results.append({
-                "run": run,
-                "method": "llm",
-                "chunk_size": size,
-                "coherence": compute_coherence(chunks),
-                "separability": compute_separability(chunks)
-            })
-            
-            # Sentence
-            num_sentences = int(size / 10)
-            chunks = chunk_text_sentence(text, num_sentences)
-            results.append({
-                "run": run,
-                "method": "sentence",
-                "chunk_size": size,
-                "coherence": compute_coherence(chunks),
-                "separability": compute_separability(chunks)
-            })
+        for run in range(runs):
+            for size in chunk_sizes:
+                # Fixed
+                chunks = chunk_text_fixed(text, size)
+                results.append({
+                    "run": run,
+                    "method": "fixed",
+                    "chunk_size": size,
+                    "coherence": compute_coherence(chunks),
+                    "separability": compute_separability(chunks)
+                })
+                
+                # Sliding (overlap is always 1/6 of the chunk size)
+                overlap = int(size / 6)
+                chunks = chunk_text_sliding(text, size, overlap)
+                results.append({
+                    "run": run,
+                    "method": "sliding",
+                    "chunk_size": size,
+                    "coherence": compute_coherence(chunks),
+                    "separability": compute_separability(chunks)
+                })
+                
+                # LLM
+                chunks = chunk_text_llm(text, size)
+                results.append({
+                    "run": run,
+                    "method": "llm",
+                    "chunk_size": size,
+                    "coherence": compute_coherence(chunks),
+                    "separability": compute_separability(chunks)
+                })
+                
+                # Sentence
+                num_sentences = int(size / 10)
+                chunks = chunk_text_sentence(text, num_sentences)
+                results.append({
+                    "run": run,
+                    "method": "sentence",
+                    "chunk_size": size,
+                    "coherence": compute_coherence(chunks),
+                    "separability": compute_separability(chunks)
+                })
     
     df = pd.DataFrame(results)
     summary = summarize_chunking_results(df)
-    filename = f"{case['name']}_chunking_evaluation.pdf"
-    plot_results(summary, filename)
+    plot_results(summary, "chunking_evaluation.pdf")
     return results
 
 def summarize_chunking_results(df):

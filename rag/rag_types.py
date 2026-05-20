@@ -64,29 +64,40 @@ def retrieve_chunks_fusion(user_query, chat_id, k_main, k_ref):
         retrieved = retrieve_chunks(query, chat_id, k_main, k_ref)
         
         for rank, chunk in enumerate(retrieved):
-            if chunk not in chunk_ranks:
-                chunk_ranks[chunk] = []
-            chunk_ranks[chunk].append(rank)
+            key = chunk["text"]
+            
+            if key not in chunk_ranks:
+                chunk_ranks[key] = {
+                    "chunk": chunk,
+                    "ranks": []
+                }
+            chunk_ranks[key]["ranks"].append(rank)
     
     rrf = 60 # smoothing constant
     
-    chunk_scores = {}
+    chunk_scores = []
     
-    for chunk, ranks in chunk_ranks.items():
+    for item in chunk_ranks.values():
         score = 0
-        for rank in ranks:
+        for rank in item["ranks"]:
             score += 1 / (rrf + rank + 1)
-        chunk_scores[chunk] = score
+        
+        chunk_scores.append({
+            "chunk": item["chunk"],
+            "score": score
+        })
     
     # Sort by score
     ranked_chunks = sorted(
-        chunk_scores.items(),
-        key=lambda x: x[1],
+        chunk_scores,
+        key=lambda x: x["score"],
         reverse=True
     )
     
+    top_k = k_main + k_ref
+    
     # return top-k chunks
-    return [chunk for chunk, _ in ranked_chunks[:k]]
+    return [x["chunk"] for x in ranked_chunks[:top_k]]
         
 
 def generate_multiple_queries(user_query, n):
@@ -110,12 +121,14 @@ def generate_multiple_queries(user_query, n):
     ["query 1", "query 2", "query 3", ..., "query n"]
     """
     
-    content = client.chat.completions.create(
+    response = client.chat.completions.create(
         model=(os.getenv("AZURE_OPENAI_DEPLOYMENT") or "").strip(),
         messages=[
             {"role": "user", "content": prompt}
         ]
     )
+    
+    content = response.choices[0].message.content.strip()
     
     try:
         queries = ast.literal_eval(content)

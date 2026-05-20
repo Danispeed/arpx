@@ -30,7 +30,7 @@ def set_up_rag_experiment(chat_id, case, runs=5):
                 chunks = retrieve_func(question, chat_id, 4, 1)
                 
                 from agents.supervisor import generate_message_response
-                response = generate_message_response(
+                response, _ = generate_message_response(
                     question,
                     5,
                     chat_id,
@@ -40,7 +40,12 @@ def set_up_rag_experiment(chat_id, case, runs=5):
                     1
                 )
                 
-                answer = response["text_explanation"]
+                answer = response.get("text_explanation", "")
+                
+                # Skip failed backend calls
+                if answer.startswith("Error"):
+                    print(f"[skip] {rag_name} | {question} -> {answer}")
+                    continue
                 
                 results.append({
                     "run": run,
@@ -114,7 +119,7 @@ def extract_claims(answer):
         return []
 
 def check_claim_support(claim, contexts):
-    context = '\n\n'.join(contexts)
+    context = '\n\n'.join(chunk["text"] for chunk in contexts)
     prompt = f"""
     You are verifying whether a claim is supported by the given context.
     
@@ -194,7 +199,7 @@ def compute_context_precision(question, contexts):
         return 0.0
     
     query_embedding = embed_chunks([question])[0]
-    context_embeddings = embed_chunks(contexts)
+    context_embeddings = embed_chunks([chunk["text"] for chunk in contexts])
     
     similarities = []
     for c in context_embeddings:
@@ -225,14 +230,24 @@ def save_rag_results_table(summary, filename):
     
     summary_rounded.to_csv(save_path, index=False)
 
-def run_rag_evaluation(chat_id, case):
-    results = set_up_rag_experiment(chat_id, case)
+def run_rag_evaluation(cases):
+    all_results = []
     
-    df = evaluate_rag(results)
+    for case in cases:
+        chat_id = case["chat_id"]
+        
+        print("Doing rag type experiment on paper:", case["name"])
+        
+        results = set_up_rag_experiment(chat_id, case)
+        
+        for result in results:
+            result["paper"] = case["name"]
+        
+        all_results.extend(results)
     
+    df = evaluate_rag(all_results)
     summary = summarize_results(df)
-    filename = f"{case['name']}_rag_evaluation.csv"
-    save_rag_results_table(summary, filename)
+    save_rag_results_table(summary, "rag_evaluation.csv")
     
     return
 

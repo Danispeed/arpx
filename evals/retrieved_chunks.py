@@ -8,20 +8,27 @@ def run_k_experiment(chat_id, case, k_values=[2, 4, 6, 8, 10], runs=5):
     results = []
     
     for run in range(runs):
+        
         for rag_name, retrieve_func in rag_methods.items():
             for k in k_values:
                 for question in case["questions"]:
                     start = time.time()
                     
-                    chunks = retrieve_func(question, chat_id, k)
+                    k_ref = max(1, k // 2)
+                    chunks = retrieve_func(question, chat_id, k, k_ref)
                     
                     from agents.supervisor import generate_message_response
-                    response = generate_message_response(question, 5, chat_id, [], retrieve_func, k)
+                    response, _ = generate_message_response(question, 5, chat_id, [], retrieve_func, k, k_ref)
                     
                     end = time.time()
                     latency = end - start
                     
-                    answer = response["text_explanation"]
+                    answer = response.get("text_explanation", "")
+                    
+                    # Skip failed backend calls
+                    if answer.startswith("Error"):
+                        print(f"[skip] {rag_name} | {question} -> {answer}")
+                        continue
                     
                     # Compute metrics
                     faith = compute_faithfulness(answer, chunks)
@@ -144,16 +151,23 @@ def plot_tradeoff(df, filename):
     plt.savefig(save_path)
     plt.close()  
 
-def run_full_k_experiment(chat_id, case):
-    df = run_k_experiment(chat_id, case)
+def run_full_k_experiment(cases):
+    all_results = []
     
-    summary = summarize_k_results(df)
+    for case in cases:
+        chat_id = case["chat_id"]
+        print("Doing rag type experiment on paper:", case["name"])
+        df = run_k_experiment(chat_id, case)
+        df["paper"] = case["name"]
+        
+        
+        all_results.append(df)
+        
+    final_df = pd.concat(all_results, ignore_index=True)
+    summary = summarize_k_results(final_df)
     
-    filename = f"{case['name']}_metric_vs_k.pdf"
-    plot_metric_vs_k(summary, filename)
-    filename = f"{case['name']}_latency_vs_k.pdf"
-    plot_latency_vs_k(summary, filename)
-    filename = f"{case['name']}_tradeoff.pdf"
-    plot_tradeoff(summary, filename)
+    plot_metric_vs_k(summary, "metric_vs_k.pdf")
+    plot_latency_vs_k(summary, "latency_vs_k.pdf")
+    plot_tradeoff(summary, "tradeoff.pdf")
     
     return

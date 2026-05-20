@@ -14,7 +14,7 @@ retrieval_configs = [
 def run_reference_ratio_experiment(chat_id, case):
     results = []
     
-    for rage_name, retrieve_func in rag_methods.items():
+    for rag_name, retrieve_func in rag_methods.items():
         for k_main, k_ref in retrieval_configs:
             ref_ratio = k_ref / (k_main + k_ref)
             for question in case["questions"]:
@@ -22,7 +22,7 @@ def run_reference_ratio_experiment(chat_id, case):
 
                 from agents.supervisor import generate_message_response
                 
-                response = generate_message_response(
+                response, _ = generate_message_response(
                     question,
                     5,
                     chat_id,
@@ -31,15 +31,20 @@ def run_reference_ratio_experiment(chat_id, case):
                     k_main,
                     k_ref
                 )
+
+                answer = response.get("text_explanation", "")
                 
-                answer = response["text_explanation"]
+                # Skip failed backend calls
+                if answer.startswith("Error"):
+                    print(f"[skip] {rag_name} | {question} -> {answer}")
+                    continue
                 
                 faithfulness = compute_faithfulness(answer, chunks)
                 answer_relevancy = compute_answer_relevancy(question, answer)
                 context_precision = compute_context_precision(question, chunks)
                 
                 results.append({
-                    "rag_type": rage_name,
+                    "rag_type": rag_name,
                     "k_main": k_main,
                     "k_ref": k_ref,
                     "ref_ratio": ref_ratio,
@@ -64,7 +69,7 @@ def summarize_reference_results(df):
 def plot_reference_results(df, filename):
     metrics = ["faithfulness", "answer_relevancy", "context_precision"]
     
-    fig, axes = plt.subplot(1, 3, figsize=(15, 5))
+    fig, axes = plt.subplots(1, 3, figsize=(15, 5))
     
     for i, metric in enumerate(metrics):
         ax = axes[i]
@@ -96,9 +101,17 @@ def plot_reference_results(df, filename):
     plt.savefig(save_path)
     plt.close()
     
-def run_full_reference_ratio_experiment(chat_id, case):
-    df = run_reference_ratio_experiment(chat_id, case)
-    summary = summarize_reference_results(df)
-    filename = f"{case['name']}_reference_ratio.pdf"
-    plot_reference_results(summary, filename)
+def run_full_reference_ratio_experiment(cases):
+    all_results = []
+    
+    for case in cases:
+        chat_id = case["chat_id"]
+        print("Doing ratio experiment on paper:", case["name"])
+        df = run_reference_ratio_experiment(chat_id, case)
+        df["paper"] = case["name"]
+        all_results.append(df)
+    
+    final_df = pd.concat(all_results, ignore_index=True)
+    summary = summarize_reference_results(final_df)
+    plot_reference_results(summary, "reference_ratio.pdf")
     

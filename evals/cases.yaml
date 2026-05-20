@@ -66,12 +66,12 @@ papers:
       - pretraining
       - fine-tuning
     questions:
-      - "What problem does TensorFlow solve?"
-      - "What is a dataflow graph in TensorFlow?"
-      - "How does TensorFlow support distributed machine learning?"
-      - "What are tensors in TensorFlow?"
-      - "How does TensorFlow manage computation across heterogeneous devices?"
-      - "What advantages does TensorFlow provide for large-scale machine learning?"
+      - "What problem does BERT solve?"
+      - "What is masked language modeling in BERT?"
+      - "What does it mean that BERT is bidirectional?"
+      - "How does next sentence prediction work in BERT?"
+      - "What is the difference between pretraining and fine-tuning in BERT?"
+      - "Why did BERT improve performance on NLP benchmarks?"
 
   - name: resnet
     path: evals/papers/resnet.pdf
