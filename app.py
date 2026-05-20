@@ -1,7 +1,6 @@
 import streamlit as st
 from agents.supervisor import analyze_paper, explain_paper, generate_message_response
 from rag.utils import find_num_references
-from rag.weaviate_db import clear
 import streamlit_mermaid as stmd
 from db.history_db import init_db, save_explanation, load_history, update_explanation, save_message, save_chunks
 import uuid
@@ -142,12 +141,20 @@ if uploaded_file is not None and not st.session_state.analyzed:
     
     st.write(f"Found {num_references} references")
     
-    selected_references = st.number_input(
-        "Select number of references to index",
-        min_value=0,
-        max_value=num_references,
-        value=min(5, num_references)
-    )
+    use_all_references = st.checkbox("Use all references", value=False)
+    
+    if use_all_references:
+        selected_references = num_references
+        
+        st.info(f"Using all {num_references} references")
+    
+    else:
+        selected_references = st.number_input(
+            "Select number of references to index",
+            min_value=0,
+            max_value=num_references,
+            value=min(5, num_references)
+        )
         
     if st.button("Analyze Paper"):
         with st.spinner("Analyzing paper, extracting topics, and indexing references..."):
