@@ -102,9 +102,7 @@ def sanitize(mermaid_code: str) -> tuple[str, str]:
     if dtype == "flowchart":
         code = _fix_flowchart(code)
     elif dtype == "mindmap":
-        # streamlit_mermaid mindmap rendering is unreliable — always convert to flowchart
-        code = _mindmap_to_flowchart(code)
-        dtype = "flowchart"
+        pass
 
     if not code.strip():
         return _FALLBACK, "fallback"
