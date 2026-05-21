@@ -38,7 +38,7 @@
     {
       "parameters": {
         "mode": "runOnceForAllItems",
-        "jsCode": "const binaryKey = $input.first().binary?.promptFile ? 'promptFile' : 'data';\nconst buf = await this.helpers.getBinaryDataBuffer(0, binaryKey);\nlet raw = buf.toString('utf8').replace(/\\r\\n?/g, '\\n');\nif (!raw.endsWith('\\n')) raw += '\\n';\n\nconst cMatch = raw.match(/shared:\\n\\s+constraints:\\n((?:\\s+-\\s+\"[^\"]*\"\\n)+)/);\nconst constraints = cMatch\n  ? [...cMatch[1].matchAll(/\"([^\"]+)\"/g)].map(m => m[1])\n  : [];\nconst cBlock = constraints.length\n  ? '\\n\\nConstraints:\\n' + constraints.map(c => '- ' + c).join('\\n')\n  : '';\n\nfunction block(yaml, section, key) {\n  const re = new RegExp(section + ':[\\\\s\\\\S]*?\\\\n  ' + key + ': \\\\|\\\\n((?:    .*\\\\n|\\\\n)*)');\n  const m = yaml.match(re);\n  if (!m) return '';\n  return m[1].replace(/^    /gm, '').trimEnd();\n}\n\nfunction levelSystem(yaml, agent, level) {\n  const re = new RegExp(\n    agent + ':[\\\\s\\\\S]*?levels:[\\\\s\\\\S]*?\\\\n    [\\'\"]?' + level + '[\\'\"]?:\\\\n      system: \\\\|\\\\n((?:        .*\\\\n|\\\\n)*)'\n  );\n  const m = yaml.match(re);\n  if (!m) return '';\n  return m[1].replace(/^        /gm, '').trimEnd();\n}\n\n// Extract all 10 per-level system prompts for explainer and chat.\n// Level selection happens in NormalizeInput (after merge with webhook),\n// where the level value from the request body is available.\nconst explainer_systems = {};\nconst chat_systems = {};\nfor (let lvl = 1; lvl <= 10; lvl++) {\n  const key = String(lvl);\n  explainer_systems[key] = (levelSystem(raw, 'explainer', key) || '') + cBlock;\n  chat_systems[key] = (levelSystem(raw, 'chat', key) || '') + cBlock;\n}\n\nconst explainer_user_template = block(raw, 'explainer', 'user_template');\nconst mermaid_system = block(raw, 'mermaid', 'system') + cBlock;\nconst mermaid_user_template = block(raw, 'mermaid', 'user_template');\nconst chat_user_template = block(raw, 'chat', 'user_template');\nconst planner_system = block(raw, 'planner', 'system') + cBlock;\nconst planner_user_template = block(raw, 'planner', 'user_template');\nconst image_prompt_system = block(raw, 'image_prompt', 'system') + cBlock;\nconst image_prompt_user_template = block(raw, 'image_prompt', 'user_template');\n\nreturn [{\n  json: {\n    explainer_systems,\n    explainer_user_template,\n    mermaid_system,\n    mermaid_user_template,\n    chat_systems,\n    chat_user_template,\n    planner_system,\n    planner_user_template,\n    image_prompt_system,\n    image_prompt_user_template,\n  },\n}];"
+        "jsCode": "const binaryKey = $input.first().binary?.promptFile ? 'promptFile' : 'data';\nconst buf = await this.helpers.getBinaryDataBuffer(0, binaryKey);\nlet raw = buf.toString('utf8').replace(/\\r\\n?/g, '\\n');\nif (!raw.endsWith('\\n')) raw += '\\n';\n\nconst cMatch = raw.match(/shared:\\n\\s+constraints:\\n((?:\\s+-\\s+\"[^\"]*\"\\n)+)/);\nconst constraints = cMatch\n  ? [...cMatch[1].matchAll(/\"([^\"]+)\"/g)].map(m => m[1])\n  : [];\nconst cBlock = constraints.length\n  ? '\\n\\nConstraints:\\n' + constraints.map(c => '- ' + c).join('\\n')\n  : '';\n\nfunction block(yaml, section, key) {\n  const re = new RegExp(section + ':[\\\\s\\\\S]*?\\\\n  ' + key + ': \\\\|\\\\n((?:    .*\\\\n|\\\\n)*)');\n  const m = yaml.match(re);\n  if (!m) return '';\n  return m[1].replace(/^    /gm, '').trimEnd();\n}\n\nfunction levelSystem(yaml, agent, level) {\n  const re = new RegExp(\n    agent + ':[\\\\s\\\\S]*?levels:[\\\\s\\\\S]*?\\\\n    [\\'\"]?' + level + '[\\'\"]?:\\\\n      system: \\\\|\\\\n((?:        .*\\\\n|\\\\n)*)'\n  );\n  const m = yaml.match(re);\n  if (!m) return '';\n  return m[1].replace(/^        /gm, '').trimEnd();\n}\n\n// Extract all 10 per-level system prompts for explainer and chat.\n// Level selection happens in NormalizeInput (after merge with webhook),\n// where the level value from the request body is available.\nconst explainer_systems = {};\nconst chat_systems = {};\nfor (let lvl = 1; lvl <= 10; lvl++) {\n  const key = String(lvl);\n  explainer_systems[key] = (levelSystem(raw, 'explainer', key) || '') + cBlock;\n  chat_systems[key] = (levelSystem(raw, 'chat', key) || '') + cBlock;\n}\n\nconst explainer_user_template = block(raw, 'explainer', 'user_template');\nconst mermaid_system = block(raw, 'mermaid', 'system') + cBlock;\nconst mermaid_user_template = block(raw, 'mermaid', 'user_template');\nconst chat_user_template = block(raw, 'chat', 'user_template');\nconst planner_system = block(raw, 'planner', 'system') + cBlock;\nconst planner_user_template = block(raw, 'planner', 'user_template');\nconst image_prompt_system = block(raw, 'image_prompt', 'system') + cBlock;\nconst image_prompt_user_template = block(raw, 'image_prompt', 'user_template');\nconst quiz_system = block(raw, 'quiz', 'system') + cBlock;\nconst quiz_user_template = block(raw, 'quiz', 'user_template');\n\nreturn [{\n  json: {\n    explainer_systems,\n    explainer_user_template,\n    mermaid_system,\n    mermaid_user_template,\n    chat_systems,\n    chat_user_template,\n    planner_system,\n    planner_user_template,\n    image_prompt_system,\n    image_prompt_user_template,\n    quiz_system,\n    quiz_user_template,\n  },\n}];"
       },
       "id": "e70138a1-c0f7-440d-a179-bbdc1338d51e",
       "name": "ParsePromptsYaml",
@@ -135,6 +135,14 @@
             {
               "name": "image_prompt_user_template",
               "stringValue": "={{ String($json.image_prompt_user_template ?? '') }}"
+            },
+            {
+              "name": "quiz_system",
+              "stringValue": "={{ String($json.quiz_system ?? '') }}"
+            },
+            {
+              "name": "quiz_user_template",
+              "stringValue": "={{ String($json.quiz_user_template ?? '') }}"
             }
           ]
         },
@@ -384,7 +392,8 @@
       "parameters": {
         "mode": "combine",
         "combineBy": "combineByPosition",
-        "options": {}
+        "options": {},
+        "numberInputs": 3
       },
       "id": "92b2de5c-5816-48ab-a0c1-98612747290e",
       "name": "MergeAgents",
@@ -418,6 +427,10 @@
             {
               "name": "planner_brief",
               "stringValue": "={{ $('InjectBrief').first()?.json?.planner_brief ?? '' }}"
+            },
+            {
+              "name": "quiz",
+              "stringValue": "={{ $json.quiz ?? '' }}"
             },
             {
               "name": "debug",
@@ -606,7 +619,7 @@
     {
       "parameters": {
         "mode": "runOnceForAllItems",
-        "jsCode": "const brief = $input.first().json.planner_brief;\nconst ni = $('NormalizeInput').first().json;\nconst briefBlock = 'Coordination brief:\\n\\n' + brief + '\\n\\n';\nconst explainer_user_msg = briefBlock + ni.explainer_user_template\n  .replaceAll('{paper_excerpt}', ni.paper_excerpt)\n  .replaceAll('{topics}', ni.topics)\n  .replaceAll('{level}', ni.level);\nconst mermaid_user_msg = briefBlock + ni.mermaid_user_template\n  .replaceAll('{paper_excerpt}', ni.paper_excerpt)\n  .replaceAll('{topics}', ni.topics)\n  .replaceAll('{level}', ni.level);\nconst image_prompt_user_msg = ni.image_prompt_user_template\n  .replaceAll('{planner_brief}', brief)\n  .replaceAll('{paper_excerpt}', ni.paper_excerpt)\n  .replaceAll('{topics}', ni.topics)\n  .replaceAll('{level}', ni.level);\nreturn [{\n  json: {\n    planner_brief: brief,\n    explainer_system: ni.explainer_system,\n    explainer_user_msg,\n    mermaid_system: ni.mermaid_system,\n    mermaid_user_msg,\n    image_prompt_system: ni.image_prompt_system,\n    image_prompt_user_msg,\n  }\n}];"
+        "jsCode": "const brief = $input.first().json.planner_brief;\nconst ni = $('NormalizeInput').first().json;\nconst briefBlock = 'Coordination brief:\\n\\n' + brief + '\\n\\n';\nconst explainer_user_msg = briefBlock + ni.explainer_user_template\n  .replaceAll('{paper_excerpt}', ni.paper_excerpt)\n  .replaceAll('{topics}', ni.topics)\n  .replaceAll('{level}', ni.level);\nconst mermaid_user_msg = briefBlock + ni.mermaid_user_template\n  .replaceAll('{paper_excerpt}', ni.paper_excerpt)\n  .replaceAll('{topics}', ni.topics)\n  .replaceAll('{level}', ni.level);\nconst image_prompt_user_msg = ni.image_prompt_user_template\n  .replaceAll('{planner_brief}', brief)\n  .replaceAll('{paper_excerpt}', ni.paper_excerpt)\n  .replaceAll('{topics}', ni.topics)\n  .replaceAll('{level}', ni.level);\nconst quiz_user_msg = briefBlock + ni.quiz_user_template\n  .replaceAll('{paper_excerpt}', ni.paper_excerpt)\n  .replaceAll('{topics}', ni.topics)\n  .replaceAll('{level}', ni.level);\nreturn [{\n  json: {\n    planner_brief: brief,\n    explainer_system: ni.explainer_system,\n    explainer_user_msg,\n    mermaid_system: ni.mermaid_system,\n    mermaid_user_msg,\n    image_prompt_system: ni.image_prompt_system,\n    image_prompt_user_msg,\n    quiz_system: ni.quiz_system,\n    quiz_user_msg,\n  }\n}];"
       },
       "id": "f1a2b3c4-d5e6-7890-abcd-100000000003",
       "name": "InjectBrief",
@@ -745,6 +758,63 @@
         1400,
         1100
       ]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://gpt-course.cognitiveservices.azure.com/openai/deployments/gpt-5-chat/chat/completions?api-version=2024-12-01-preview",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "httpHeaderAuth",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ { messages: [ { role: \"system\", content: $json.quiz_system }, { role: \"user\", content: $json.quiz_user_msg } ], temperature: 0.4, max_completion_tokens: 900 } }}",
+        "options": {}
+      },
+      "id": "a8042e64-4a69-4a00-a697-81bad4856a9e",
+      "name": "QuizAgent",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        740,
+        1320
+      ],
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "OlznxoofcjeRU7GT",
+          "name": "Header Auth account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "fields": {
+          "values": [
+            {
+              "name": "quiz",
+              "stringValue": "={{ $json.choices?.[0]?.message?.content || \"\" }}"
+            }
+          ]
+        },
+        "include": "none",
+        "options": {}
+      },
+      "id": "0c9bc9e1-8f7a-4c7c-9132-858c7f9136b3",
+      "name": "SetQuizOutput",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.2,
+      "position": [
+        960,
+        1320
+      ]
     }
   ],
   "pinData": {},
@@ -882,6 +952,11 @@
           },
           {
             "node": "ImagePromptAgent",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "QuizAgent",
             "type": "main",
             "index": 0
           }
@@ -1038,6 +1113,28 @@
             "node": "RespondChat",
             "type": "main",
             "index": 0
+          }
+        ]
+      ]
+    },
+    "QuizAgent": {
+      "main": [
+        [
+          {
+            "node": "SetQuizOutput",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "SetQuizOutput": {
+      "main": [
+        [
+          {
+            "node": "MergeAgents",
+            "type": "main",
+            "index": 2
           }
         ]
       ]
