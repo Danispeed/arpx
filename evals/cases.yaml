@@ -2,19 +2,93 @@
 # Add expected_topics: the key concepts the explainer must address.
 
 papers:
-  - path: evals/papers/attention.pdf
-    expected_topics: [transformer, attention, self-attention, encoder, decoder, multi-head-attention, positional-encoding]
+  - name: attention
+    path: evals/papers/attention.pdf
+    chat_id: attention
+    expected_topics:
+      - transformer
+      - attention
+      - self-attention
+      - encoder
+      - decoder
+      - multi-head-attention
+      - positional-encoding
+    questions:
+      - "What problem does the Transformer architecture solve?"
+      - "What is self-attention?"
+      - "Why does the Transformer use positional encoding?"
+      - "How does multi-head attention work?"
+      - "Why is the Transformer more parallelizable than recurrent models?"
+      - "What are the roles of the encoder and decoder in the Transformer?"
 
-  - path: evals/papers/pesto.pdf
-    expected_topics: [byzantine-fault-tolerance, distributed-database, state-machine-replication, sql-transactions, consensus]
+  - name: pesto
+    path: evals/papers/pesto.pdf
+    chat_id: pesto
+    expected_topics:
+      - byzantine-fault-tolerance
+      - distributed-database
+      - state-machine-replication
+      - sql-transactions
+      - consensus
+    questions:
+      - "What problem does Pesto solve?"
+      - "Why are SMR-based BFT systems inefficient?"
+      - "How does Pesto ensure serializability without total ordering?"
+      - "What is the snapshot protocol used for?"
+      - "How does Pesto handle concurrency control?"
+      - "What performance improvements does Pesto achieve?"
 
-  - path: evals/papers/tensorflow.pdf
-    expected_topics: [tensorflow, dataflow-graph, tensor, distributed-training, machine-learning-framework]
+  - name: tensorflow
+    path: evals/papers/tensorflow.pdf
+    chat_id: tensorflow
+    expected_topics:
+      - tensorflow
+      - dataflow-graph
+      - tensor
+      - distributed-training
+      - machine-learning-framework
+    questions:
+      - "What problem does TensorFlow solve?"
+      - "What is a dataflow graph in TensorFlow?"
+      - "How does TensorFlow support distributed machine learning?"
+      - "What are tensors in TensorFlow?"
+      - "How does TensorFlow manage computation across heterogeneous devices?"
+      - "What advantages does TensorFlow provide for large-scale machine learning?"
 
-  - path: evals/papers/bert.pdf
-    expected_topics: [bert, masked-language-modeling, bidirectional-transformer, pretraining, fine-tuning]
 
-  - path: evals/papers/resnet.pdf
-    expected_topics: [residual-learning, skip-connection, deep-network, image-classification, vanishing-gradient]
+  - name: bert
+    path: evals/papers/bert.pdf
+    chat_id: bert
+    expected_topics:
+      - bert
+      - masked-language-modeling
+      - bidirectional-transformer
+      - pretraining
+      - fine-tuning
+    questions:
+      - "What problem does BERT solve?"
+      - "What is masked language modeling in BERT?"
+      - "What does it mean that BERT is bidirectional?"
+      - "How does next sentence prediction work in BERT?"
+      - "What is the difference between pretraining and fine-tuning in BERT?"
+      - "Why did BERT improve performance on NLP benchmarks?"
 
-levels: [1, 2, 3, 4, 5, 6, 7, 8, 9, 10]
+  - name: resnet
+    path: evals/papers/resnet.pdf
+    chat_id: resnet
+    expected_topics:
+      - residual-learning
+      - skip-connection
+      - deep-network
+      - image-classification
+      - vanishing-gradient
+    questions:
+      - "What problem does ResNet solve?"
+      - "What is a residual connection?"
+      - "Why are skip connections important in deep neural networks?"
+      - "How does ResNet address the vanishing gradient problem?"
+      - "What performance improvements did ResNet achieve?"
+      - "Why is training very deep neural networks difficult without residual learning?"
+    
+
+levels: [1,2,3,4,5,6,7,8,9,10]

@@ -1,0 +1,4 @@
+rag_type,faithfulness_mean,faithfulness_std,answer_relevancy_mean,answer_relevancy_std,context_precision_mean,context_precision_std
+fusion,0.84,0.171,0.651,0.082,0.297,0.091
+llm_query,0.943,0.065,0.683,0.082,0.478,0.088
+naive,0.953,0.057,0.666,0.088,0.488,0.087

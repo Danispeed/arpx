@@ -16,3 +16,4 @@ ragas
 tenacity
 pyyaml
 piper-tts==1.2.0
+datasets

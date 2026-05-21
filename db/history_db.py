@@ -42,6 +42,18 @@ def init_db():
                        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
                    )
                    """)
+    
+    cursor.execute("""
+                   CREATE TABLE IF NOT EXISTS RetrievedChunks (
+                       id INTEGER PRIMARY KEY AUTOINCREMENT,
+                       explanation_id INTEGER,
+                       message_id INTEGER,
+                       chunk_type TEXT,
+                       source TEXT,
+                       content TEXT,
+                       created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+                   )
+                   """)
 
     for col in ("image_prompt", "analogy_image", "planner_brief", "quiz_json"):
         try:
@@ -115,6 +127,35 @@ def save_message(explanation_id, message_content, role):
                    VALUES(?, ?, ?)
                 """, (explanation_id, role, message_content))
     
+    message_id = cursor.lastrowid
+    
+    connection.commit()
+    connection.close()
+    
+    return message_id
+
+def save_chunks(explanation_id, chunks, chunk_type, message_id=None):
+    connection = sqlite3.connect(DB_PATH)
+    cursor = connection.cursor()
+    
+    for chunk in chunks:
+        cursor.execute("""
+                INSERT INTO RetrievedChunks (
+                    explanation_id,
+                    message_id,
+                    chunk_type,
+                    source,
+                    content
+                )
+                VALUES (?, ?, ?, ?, ?)
+                """, (
+                    explanation_id,
+                    message_id,
+                    chunk_type,
+                    chunk["source"],
+                    chunk["text"]
+                ))
+
     connection.commit()
     connection.close()
     
@@ -152,6 +193,9 @@ def load_history():
             "planner_brief": row[10],
             "quiz_json": row[11],
             "messages": load_messages(explanation_id),
+            "topic_chunks": load_chunks(explanation_id, "topics"),
+            "explain_chunks": load_chunks(explanation_id, "explanation"),
+            "message_chunks": load_message_chunks(explanation_id)
         })
     
     return history
@@ -161,7 +205,7 @@ def load_messages(explanation_id):
     cursor = connection.cursor()
     
     cursor.execute("""
-                   SELECT role, content
+                   SELECT id, role, content
                    FROM Messages
                    WHERE explanation_id = ?
                    ORDER BY created_at ASC
@@ -170,12 +214,73 @@ def load_messages(explanation_id):
     rows = cursor.fetchall()
     connection.close()
     
-    return [{"role": r, "content": c} for r, c in rows]
+    return [{"id": mid, "role": r, "content": c} for mid, r, c in rows]
+
+def load_chunks(explanation_id, chunk_type=None, message_id=None):
+    connection = sqlite3.connect(DB_PATH)
+    cursor = connection.cursor()
+    
+    query = """
+        SELECT source, content
+        FROM RetrievedChunks
+        WHERE explanation_id = ?
+    """
+    
+    params = [explanation_id]
+    
+    if chunk_type is not None:
+        query += " AND chunk_type = ?"
+        params.append(chunk_type)
+    
+    if message_id is not None:
+        query += " AND message_id = ?"
+        params.append(message_id)
+    
+    cursor.execute(query, params)
+    
+    rows = cursor.fetchall()
+    connection.close()
+    
+    return [
+        {
+            "source": source,
+            "text": text
+        }
+        for source, text in rows
+    ]
+
+def load_message_chunks(explanation_id):
+    connection = sqlite3.connect(DB_PATH)
+    cursor = connection.cursor()
+    
+    cursor.execute("""
+        SELECT message_id, source, content
+        FROM RetrievedChunks
+        WHERE explanation_id = ?
+        AND chunk_type = 'chat'
+        ORDER BY message_id ASC
+    """, (explanation_id,))
+    
+    rows = cursor.fetchall()
+    connection.close()
+    
+    grouped = {}
+    
+    for message_id, source, content in rows:
+        if message_id not in grouped:
+            grouped[message_id] = []
+        
+        grouped[message_id].append({
+            "source": source,
+            "text": content
+        })    
+    
+    return grouped
+    
     
 def generate_title(topics):
     print("Topics:", topics)
     
-    # HERE: could also just send the paper to the llm (I dont think that would be too much to send)
     prompt = f"""
     Generate a short, clear title (max 3 words) for a research paper explanation.
     

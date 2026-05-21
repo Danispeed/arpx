@@ -1,11 +1,14 @@
 import weaviate
 import weaviate.classes as wvc
+import os
+
+WEAVIATE_HOST = os.getenv("WEAVIATE_HOST", "127.0.0.1")
 
 client = weaviate.connect_to_custom(
-    http_host="weaviate",
+    http_host=WEAVIATE_HOST,
     http_port=8080,
     http_secure=False,
-    grpc_host="weaviate",
+    grpc_host=WEAVIATE_HOST,
     grpc_port=50051,
     grpc_secure=False,
 )
@@ -66,7 +69,7 @@ def store_chunks(chunks, embeddings, source, chat_id):
 
 # This function
 # will now retrieve the top 5 chunks based on the query, this parameter can be changed
-def query_chunks(query_embedding, chat_id, top_k_main=5, top_k_ref=2):
+def query_chunks(query_embedding, chat_id, top_k_main, top_k_ref):
     collection = client.collections.get("PaperChunk")
     
     # Chunks from the main paper (the paper that was uploaded by the user)
@@ -91,7 +94,23 @@ def query_chunks(query_embedding, chat_id, top_k_main=5, top_k_ref=2):
     # Combine results
     combined = main_results.objects + reference_results.objects
     
-    return [obj.properties["text"] for obj in combined]
+    return [
+        {
+            "text": obj.properties["text"],
+            "source": obj.properties["source"]
+        }
+        for obj in combined
+    ]
+
+def is_indexed(chat_id):
+    collection = client.collections.get("PaperChunk")
+    
+    response = collection.query.fetch_objects(
+        limit=1,
+        filters=wvc.query.Filter.by_property("chat_id").equal(chat_id)
+    )
+    
+    return len(response.objects) > 0
     
 
 # Weaviate returns:
