@@ -692,7 +692,7 @@
         "specifyBody": "json",
         "jsonBody": "={{ { prompt: $json.sd_prompt, steps: 4, width: 1024, height: 1024 } }}",
         "options": {
-          "timeout": 120000
+          "timeout": 300000
         }
       },
       "id": "f1a2b3c4-d5e6-7890-abcd-100000000006",

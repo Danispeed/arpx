@@ -44,7 +44,7 @@ FLUX.1 Schnell is a gated model. Authenticate with HuggingFace before downloadin
 
 ```bash
 pip install -U huggingface_hub
-huggingface-cli login
+hf auth login
 ```
 
 Pre-download the model (~24 GB, cached in `~/hf_cache`):
