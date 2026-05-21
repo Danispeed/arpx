@@ -28,6 +28,7 @@ def explain_paper(level, topics, chat_id):
             "image_prompt": "",
             "analogy_image": "",
             "planner_brief": "",
+            "quiz": "",
         }
 
     query = "Explain the main ideas of this research paper"
@@ -43,6 +44,7 @@ def explain_paper(level, topics, chat_id):
             "image_prompt": "",
             "analogy_image": "",
             "planner_brief": "",
+            "quiz": "",
         }
 
     return result

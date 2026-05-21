@@ -13,9 +13,10 @@ Endpoint: `POST http://localhost:5678/webhook/arpx/orchestrate`
 
 ### stage: "explain"
 Request: `{stage, paper_excerpt: str, level: int 1-10, topics: list[str]}`
-Response: `{text_explanation: str, mermaid_code: str, image_prompt: str, analogy_image: str (base64 PNG), planner_brief: str, debug: {stage, route}}`
+Response: `{text_explanation: str, mermaid_code: str, quiz: str (JSON string), image_prompt: str, analogy_image: str (base64 PNG), planner_brief: str, debug: {stage, route}}`
 
-Explain flow: PlannerAgent → (ExplainerAgent + MermaidAgent + ImagePromptAgent→CallClusterAPI) parallel → MergeAll.
+Explain flow: PlannerAgent → (ExplainerAgent + MermaidAgent + QuizAgent + ImagePromptAgent→CallClusterAPI) parallel → MergeAll.
+`quiz` is a JSON string: `{"questions":[{"question, options[4], answer_index, rationale}]}`.
 `image_prompt` and `analogy_image` may be empty if cluster service is unreachable.
 
 ### stage: "chat"
@@ -42,6 +43,8 @@ planner.system                  # coordination brief generator
 planner.user_template           # placeholders: {paper_excerpt}, {topics}, {level}
 image_prompt.system             # visual analogy image prompt generator
 image_prompt.user_template      # placeholders: {planner_brief}, {paper_excerpt}, {topics}, {level}
+quiz.system                     # single prompt with embedded level-aware question rules; outputs JSON
+quiz.user_template              # placeholders: {paper_excerpt}, {topics}, {level}
 ```
 
 Optimization writes to `explainer.levels[N].system`.

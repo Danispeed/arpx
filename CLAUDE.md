@@ -12,7 +12,7 @@ Phase 1 `analyze_paper(pdf)` (local, no n8n):
 Phase 2 `explain_paper(level, topics)` (calls n8n):
 1. Ping n8n health check — abort if unreachable
 2. Retrieve top-5+2 chunks, POST to N8N_URL with {stage, paper_excerpt, level, topics}, timeout=300s
-3. n8n: PlannerAgent → parallel(ExplainerAgent + MermaidAgent + ImagePromptAgent→CallClusterAPI) → {text_explanation, mermaid_code, image_prompt, analogy_image, planner_brief}
+3. n8n: PlannerAgent → parallel(ExplainerAgent + MermaidAgent + QuizAgent + ImagePromptAgent→CallClusterAPI) → {text_explanation, mermaid_code, quiz, image_prompt, analogy_image, planner_brief}
 4. Save to SQLite (all fields), display in Streamlit
 
 ## Tech stack
@@ -24,7 +24,8 @@ Phase 2 `explain_paper(level, topics)` (calls n8n):
 | Vector DB | Weaviate, collection `PaperChunk`, fields: text, source, vector |
 | Orchestration | n8n external via webhook — never called directly except via `api_client.py` |
 | Embeddings | sentence-transformers all-MiniLM-L6-v2, loaded once at import |
-| Persistence | SQLite `arpx.db` at project root, table `Explanations` (cols: text_explanation, mermaid_code, image_prompt, analogy_image, planner_brief) |
+| Persistence | SQLite `arpx.db` at project root, table `Explanations` (cols: text_explanation, mermaid_code, image_prompt, analogy_image, planner_brief, quiz_json) |
+| TTS | Piper (CPU, runs in `app` container); voice model baked at `/opt/piper`; narrates the explanation |
 | PDF | PyMuPDF (fitz) |
 
 ## Env vars (.env at root)

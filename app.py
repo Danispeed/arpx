@@ -5,6 +5,8 @@ from rag.weaviate_db import clear
 import streamlit.components.v1 as components
 from utils.mermaid_sanitizer import sanitize as sanitize_mermaid
 from db.history_db import init_db, save_explanation, load_history, update_explanation, save_message
+from utils.tts import synthesize as tts_synthesize
+import json
 import uuid
 
 # State (since every user interaction reruns the entire script from top to bottom)
@@ -77,6 +79,7 @@ for item in history:
                 "image_prompt": item.get("image_prompt", ""),
                 "analogy_image": item.get("analogy_image", ""),
                 "planner_brief": item.get("planner_brief", ""),
+                "quiz": item.get("quiz_json", ""),
             }
             st.session_state.explained = True
             st.session_state.chat_messages = messages
@@ -191,6 +194,17 @@ if st.session_state.explained:
                 with col2:
                     st.image(_b64.b64decode(analogy_image), use_container_width=True)
 
+        # Audio narration
+        tts_key = f"tts_audio_{st.session_state.explanation_id}"
+        if st.button("Read aloud"):
+            with st.spinner("Generating narration..."):
+                st.session_state[tts_key] = tts_synthesize(text)
+        audio_bytes = st.session_state.get(tts_key)
+        if audio_bytes:
+            st.audio(audio_bytes, format="audio/wav")
+        elif tts_key in st.session_state:
+            st.warning("Narration is unavailable - the Piper voice model could not be loaded.")
+
         # Show diagram
         st.subheader("Diagram")
 
@@ -209,6 +223,58 @@ if st.session_state.explained:
             """
             components.html(_mermaid_html, height=500, scrolling=True)
             st.caption(f"Diagram type: {diagram_type}")
+
+        # Comprehension quiz
+        quiz_raw = result.get("quiz", "") or ""
+        quiz = None
+        start, end = quiz_raw.find("{"), quiz_raw.rfind("}")
+        if start != -1 and end > start:
+            try:
+                quiz = json.loads(quiz_raw[start:end + 1])
+            except (ValueError, TypeError):
+                quiz = None
+
+        questions = (quiz or {}).get("questions") or []
+        if questions:
+            st.subheader("Test your understanding")
+            eid = st.session_state.explanation_id
+
+            with st.form(f"quiz_form_{eid}"):
+                for i, q in enumerate(questions):
+                    st.markdown(f"**{i + 1}. {q.get('question', '')}**")
+                    st.radio(
+                        f"q{i}",
+                        options=list(range(len(q.get("options", [])))),
+                        format_func=lambda idx, opts=q.get("options", []): opts[idx],
+                        index=None,
+                        key=f"quiz_{eid}_{i}",
+                        label_visibility="collapsed",
+                    )
+                submitted = st.form_submit_button("Submit answers")
+
+            if submitted:
+                correct = 0
+                for i, q in enumerate(questions):
+                    chosen = st.session_state.get(f"quiz_{eid}_{i}")
+                    options = q.get("options", [])
+                    try:
+                        answer = int(q.get("answer_index"))
+                    except (TypeError, ValueError):
+                        answer = None
+                    answer_text = (
+                        options[answer]
+                        if answer is not None and 0 <= answer < len(options)
+                        else "?"
+                    )
+                    rationale = q.get("rationale", "")
+                    if chosen is None:
+                        st.warning(f"Q{i + 1}: not answered. Correct answer: {answer_text}. {rationale}")
+                    elif chosen == answer:
+                        correct += 1
+                        st.success(f"Q{i + 1}: correct. {rationale}")
+                    else:
+                        st.error(f"Q{i + 1}: incorrect. Correct answer: {answer_text}. {rationale}")
+                st.info(f"You scored {correct} / {len(questions)}.")
 
         st.subheader("Ask follow-up questions")
         
