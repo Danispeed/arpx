@@ -44,13 +44,13 @@ def fetch_paper_data(query):
         elapsed = now - LAST_REQUEST_TIME
         
         if elapsed < MIN_INTERVAL:
-            time.sleep(MIN_INTERVAL)
+            time.sleep(MIN_INTERVAL - elapsed)
         
         print("Sending request to Semantic Scholar")
         LAST_REQUEST_TIME = time.time()
         response = safe_request(url, parameters, headers)
         
-        if response == None:
+        if response is None:
             print("All retries failed")
             return None
         

@@ -12,7 +12,9 @@ openai
 python-dotenv
 requests
 streamlit-mermaid
+matplotlib
 dspy-ai
 ragas
 tenacity
 pyyaml
+datasets

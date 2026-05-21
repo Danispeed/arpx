@@ -34,7 +34,7 @@ def find_num_references(pdf_document):
             continue
         
         # Line start with number (e.g., [1]). Thus it is a new reference
-        if re.match(r"^\[\d+\]", line):
+        if re.match(r"^\[\d+\]|^\d+\.", line):
             if current_reference:
                 # Save the old reference
                 references.append(current_reference.strip())
@@ -87,7 +87,7 @@ def extract_references(text, num_references):
             continue
         
         # Line start with number (e.g., [1]). Thus it is a new reference
-        if re.match(r"^\[\d+\]", line):
+        if re.match(r"^\[\d+\]|^\d+\.", line):
             if current_reference:
                 # Save the old reference
                 references.append(current_reference.strip())
