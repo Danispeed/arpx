@@ -691,7 +691,7 @@
     {
       "parameters": {
         "method": "POST",
-        "url": "={{ ($vars?.IMAGE_SERVICE_URL ?? 'http://localhost:8090') + '/generate' }}",
+        "url": "={{ ($vars?.IMAGE_SERVICE_URL ?? 'http://host.docker.internal:8765') + '/generate' }}",
         "sendHeaders": true,
         "headerParameters": {
           "parameters": [

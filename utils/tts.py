@@ -1,6 +1,8 @@
 import io
 import os
+import re
 import shutil
+import struct
 import tarfile
 import urllib.request
 import wave
@@ -60,13 +62,46 @@ def _get_voice():
         return None
 
 
-def synthesize(text):
-    """Render `text` to WAV bytes, or return None if TTS is unavailable."""
-    text = (text or "").replace("[ANALOGY_IMAGE]", " ").strip()
+def _split_sentences(text: str) -> list[str]:
+    text = text.replace("[ANALOGY_IMAGE]", " ")
+    # Split on sentence-ending punctuation followed by whitespace or end
+    parts = re.split(r'(?<=[.!?])\s+', text.strip())
+    return [p.strip() for p in parts if p.strip()]
+
+
+def _silence_frames(params: wave._wave_params, ms: int = 400) -> bytes:
+    n_samples = int(params.framerate * ms / 1000) * params.nchannels
+    return struct.pack(f"<{n_samples}h", *([0] * n_samples))
+
+
+def synthesize(text: str):
+    """Render `text` to WAV bytes with inter-sentence pauses, or None if TTS unavailable."""
     voice = _get_voice()
     if voice is None or not text:
         return None
-    buffer = io.BytesIO()
-    with wave.open(buffer, "wb") as wav_file:
-        voice.synthesize(text, wav_file)
-    return buffer.getvalue()
+
+    sentences = _split_sentences(text or "")
+    if not sentences:
+        return None
+
+    chunks: list[bytes] = []
+    params = None
+
+    for sentence in sentences:
+        buf = io.BytesIO()
+        with wave.open(buf, "wb") as wav_file:
+            voice.synthesize(sentence, wav_file)
+        buf.seek(0)
+        with wave.open(buf, "rb") as wav_file:
+            if params is None:
+                params = wav_file.getparams()
+            chunks.append(wav_file.readframes(wav_file.getnframes()))
+        if params is not None:
+            chunks.append(_silence_frames(params, ms=400))
+
+    out = io.BytesIO()
+    with wave.open(out, "wb") as wav_out:
+        wav_out.setparams(params)
+        for chunk in chunks:
+            wav_out.writeframes(chunk)
+    return out.getvalue()
