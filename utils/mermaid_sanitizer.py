@@ -102,7 +102,13 @@ def sanitize(mermaid_code: str) -> tuple[str, str]:
     if dtype == "flowchart":
         code = _fix_flowchart(code)
     elif dtype == "mindmap":
-        pass
+        lines = code.strip().splitlines()
+        non_root = [l for l in lines[1:] if l.strip()]
+        if non_root:
+            indents = set(len(l) - len(l.lstrip()) for l in non_root)
+            if len(indents) <= 1:
+                code = _mindmap_to_flowchart(code)
+                dtype = "flowchart"
 
     if not code.strip():
         return _FALLBACK, "fallback"
