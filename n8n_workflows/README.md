@@ -4,7 +4,9 @@ This folder contains the n8n workflow export (`arpx-mvp.json`).
 
 ## Setup
 
-### 1. Start n8n
+### 1. Start the application
+
+From the project root:
 
 ```bash
 docker compose up -d
@@ -31,34 +33,9 @@ Assign the credential to each of the following nodes:
 - `ImagePromptAgent`
 - `ChatAgent`
 
-### 4. Configure the image service URL
+### 4. Publish the workflow
 
-The Visual Analogy pipeline calls an external image generation service on ificluster (see [`image_service/README.md`](../image_service/README.md)).
-
-Start the image service on a GPU node:
-```bash
-cd image_service && ./start.sh c6-4
-```
-
-Then open an SSH tunnel from the local machine:
-```bash
-./image_service/tunnel.sh c6-4
-```
-
-The `CallClusterAPI` node URL defaults to:
-```
-{{ $vars?.IMAGE_SERVICE_URL ?? 'http://host.docker.internal:8765/generate' }}
-```
-
-Local port `8765` is fixed by `tunnel.sh` — the URL does not change between sessions.
-
-If the image service is unavailable, the explain stage still returns text and Mermaid output; image fields will be empty strings.
-
-### 5. Publish and activate
-
-n8n 2.x requires both steps for production webhooks:
-1. Click **Publish** in the workflow editor.
-2. Toggle the workflow to **Active**.
+Click **Publish** in the workflow editor.
 
 ---
 
@@ -187,9 +164,3 @@ Used by `supervisor.py` as a health check before every explain call.
 
 ---
 
-## Notes
-
-- Azure endpoint: `https://gpt-course.cognitiveservices.azure.com`
-- Azure deployment name: `gpt-5-chat` (course-specific — not a standard OpenAI model name)
-- API keys belong only in n8n credentials, never in version control.
-- If node version warnings appear on import, re-save the workflow in n8n and export again.
