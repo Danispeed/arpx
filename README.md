@@ -2,11 +2,6 @@
 
 **INF-3600 Generative AI — UiT The Arctic University of Norway, Spring 2026**
 
-| Team member | Role |
-|-------------|------|
-| Daniel | Frontend, RAG pipeline, evaluation |
-| Andreas | n8n orchestration, prompt engineering, image service |
-
 ARPX is a multi-agent, Retrieval-Augmented Generation (RAG) system that acts as an adaptive tutor for academic research papers. It analyzes a PDF, indexes it alongside its cited references, and produces an explanation calibrated to the reader's stated knowledge level (1–10).
 
 ## Features
@@ -19,7 +14,7 @@ ARPX is a multi-agent, Retrieval-Augmented Generation (RAG) system that acts as 
 - **Visual analogy images** — FLUX.1 Schnell on GPU cluster generates a conceptual metaphor image
 - **Comprehension quiz** — multiple-choice quiz calibrated to the reader's level
 - **Text-to-speech** — Piper CPU-based narration of the explanation
-- **Follow-up chat** — RAG-powered conversation with fusion retrieval (RRF)
+- **Follow-up chat** — RAG-powered conversation with Reciprocal Rank Fusion retrieval
 - **Explanation history** — SQLite persistence with full session restore
 
 ## System architecture
@@ -35,7 +30,10 @@ Embed --> WDB["Weaviate (VectorDB)"]
 Analyze --> Scholar["Semantic Scholar API"]
 Scholar --> WDB
 WDB --> Context[RetrievedChunks]
-Context --> N8N["n8n Webhook"]
+Context --> Topics["Topics (Azure OpenAI)"]
+Topics --> UI
+UI --> LevelSelect["User selects level + clicks Explain"]
+LevelSelect --> N8N["n8n Webhook"]
 N8N --> Planner[PlannerAgent]
 Planner --> Explain[ExplainerAgent]
 Planner --> Diagram[MermaidAgent]
@@ -53,7 +51,7 @@ The system has four components:
 - **Streamlit app** — file upload, level selection, explanation display, quiz, TTS, chat
 - **Weaviate** — vector database storing paper and reference embeddings
 - **n8n** — orchestrates six LLM agents (Planner, Explainer, Mermaid, Quiz, ImagePrompt, Chat)
-- **Image service** — FastAPI on ificluster GPU node running FLUX.1 Schnell (optional)
+- **Image service** — FastAPI on ificluster GPU node running FLUX.1 Schnell
 
 ## Setup
 
@@ -87,17 +85,17 @@ The system has four components:
 
    **Credentials** → **Add Credential** → **Header Auth** with name `api-key` and your Azure key as the value. Assign this credential to all six LLM nodes: `PlannerAgent`, `ExplainerAgent`, `MermaidAgent`, `QuizAgent`, `ImagePromptAgent`, `ChatAgent`.
 
-5. **Publish and activate the workflow**
+5. **Publish the workflow**
 
-   In the n8n workflow editor: click **Publish**, then toggle the workflow to **Active**.
+   In the n8n workflow editor: click **Publish**.
 
 6. **Open the application**
 
    Navigate to http://localhost:8051.
 
-7. **(Optional) Start the GPU image service**
+7. **Start the GPU image service**
 
-   See [`image_service/README.md`](image_service/README.md) for setting up FLUX.1 Schnell on ificluster. Without it, explanations still work — image fields will be empty.
+   See [`image_service/README.md`](image_service/README.md) for setting up FLUX.1 Schnell on ificluster.
 
 ### Environment variables
 
@@ -128,7 +126,7 @@ The system has four components:
 ### Phase 3: Chat (calls n8n)
 
 1. User types a follow-up question.
-2. Fusion retrieval (RRF with 3 sub-queries) fetches relevant chunks.
+2. Three reformulations of the question are sent to Weaviate; results are merged with Reciprocal Rank Fusion (RRF) for better recall than a single query.
 3. Chunks + conversation history are POSTed to n8n's chat stage.
 4. Response is displayed and persisted.
 
@@ -154,4 +152,4 @@ Results are documented in [`evals/FINDINGS.md`](evals/FINDINGS.md).
 
 ## AI assistance attribution
 
-Development assisted by AI tools (Cursor with Claude/Codex). All code reviewed and edited by team members.
+Development assisted by AI tools: Cursor (Claude Sonnet, Composer 2.5 Fast, etc..), Claude Code, and ChatGPT. All code reviewed and edited by team members.
