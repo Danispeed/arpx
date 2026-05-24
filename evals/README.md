@@ -17,17 +17,13 @@ source evals/.venv/bin/activate
 # 3. Predict cost before spending quota
 python -m evals.run estimate
 
-# 4. Generate purpose-built level 1 + 5 system prompts using gpt-5-chat
-python -m evals.prompt_design generate --write
-rm -rf evals/cache/generations/   # clear cache so new prompts take effect
-
-# 5. Run multi-model comparison (levels 1 and 5, 3 models)
+# 4. Run multi-model comparison (levels 1 and 5, 3 models)
 python -m evals.run compare-models --levels 1 5
 
-# 6. Visualize results
+# 5. Visualize results
 python -m evals.visualize --csv "evals/reports/comparison_all_models_*.csv"
 
-# 7. (Optional) Score current prompts.yaml across all levels
+# 6. (Optional) Score current prompts.yaml across all levels
 python -m evals.run evaluate
 ```
 
@@ -132,14 +128,18 @@ A *case* is one (paper, level) pair. The current grid:
 papers:
   - path: evals/papers/attention.pdf        # "Attention Is All You Need"
     expected_topics: [transformer, attention, self-attention, ...]
-  - path: evals/papers/pesto.pdf            # Pesto system paper
-    expected_topics: [pose-estimation, keypoints, heatmap, ...]
+  - path: evals/papers/pesto.pdf            # Pesto (BFT distributed database)
+    expected_topics: [byzantine-fault-tolerance, distributed-database, ...]
   - path: evals/papers/tensorflow.pdf       # TensorFlow system paper
     expected_topics: [tensorflow, dataflow-graph, tensor, ...]
+  - path: evals/papers/bert.pdf             # BERT
+    expected_topics: [bert, masked-language-modeling, ...]
+  - path: evals/papers/resnet.pdf           # ResNet
+    expected_topics: [residual-learning, skip-connection, ...]
 levels: [1, 2, 3, 4, 5, 6, 7, 8, 9, 10]
 ```
 
-3 papers × 10 levels = **30 cases** per run. 
+5 papers × 10 levels = **50 cases** per run. 
 
 To add a paper: drop the PDF into `evals/papers/`, add an entry to `cases.yaml`
 with its expected_topics, and re-run evaluate. The excerpt cache keyed on the
@@ -183,10 +183,12 @@ Total = sum (0–20). Normalized score = total / 20 (0.0–1.0).
 Results are cached keyed on `(output_hash, level, judge_model)`, so re-running
 evaluate on unchanged prompts is essentially free.
 
-### RAG metrics (`evals/graders/rag_metrics.py`)
+### RAG metrics (`evals/rag_types.py`)
 
-Optional Ragas wrapper (faithfulness, answer_relevancy, context_precision).
-Not currently wired into the main eval loop — available for standalone use.
+Custom RAG evaluation with three metrics (faithfulness, answer_relevancy, context_precision)
+and three retrieval strategies (naive, LLM-query rewrite, fusion/RRF). Requires Docker
+(Weaviate must be running). Not wired into the main prompt eval loop — run separately
+via `python -m evals.run rag-eval`.
 
 ---
 
@@ -207,7 +209,7 @@ Eval estimate for 30 cases:
 
 ### `python -m evals.run evaluate`
 
-Scores all 30 cases against the current `prompts.yaml`. Saves:
+Scores all 50 cases against the current `prompts.yaml`. Saves:
 - `evals/reports/report_<timestamp>.json` — full per-case scores
 - Printed summary table + regression check against the most recent previous report
 
@@ -246,23 +248,6 @@ python -m evals.run compare-models --models gpt-5-chat DeepSeek-V3.2 --levels 1 
 ```
 
 Output: `evals/reports/comparison_all_models_<timestamp>.csv`
-
----
-
-### `python -m evals.prompt_design generate [--write]`
-
-Uses `gpt-5-chat` (the strongest available UiT Azure deployment) to write purpose-built
-system prompts for levels 1 and 5. Prompts are anchored to the rubric dimensions so the
-model is explicitly asked to maximise faithfulness, level_match, coverage, and clarity.
-
-Without `--write`, prints the generated prompts as a dry run.
-With `--write`, updates `n8n_workflows/prompts.yaml` directly.
-
-```bash
-python -m evals.prompt_design generate           # dry run
-python -m evals.prompt_design generate --write   # write to prompts.yaml
-rm -rf evals/cache/generations/                  # clear cache after writing
-```
 
 ---
 
@@ -411,7 +396,7 @@ Mitigations built into the harness:
   Re-running `evaluate` on unchanged prompts hits the generation and judge caches
   and makes essentially zero API calls.
 
-**Order-of-magnitude call volumes** (cold cache, `--budget 5`, 30 cases):
+**Order-of-magnitude call volumes** (cold cache, `--budget 5`, 50 cases):
 
 | Step | Calls | Approx tokens |
 |---|---|---|

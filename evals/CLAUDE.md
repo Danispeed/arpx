@@ -8,7 +8,7 @@ Reads PDFs directly with fitz; calls Azure OpenAI via SDK.
 ```bash
 python -m evals.run estimate              # dry-run: predict cost
 python -m evals.run evaluate             # score all cases, save to evals/reports/
-python -m evals.run compare --baseline   # compare latest report to baseline.json
+python -m evals.run check-baseline       # compare latest report to baseline.json
 python -m evals.optimize --levels 1,5,7 --budget 5
 python -m evals.optimize --optimizer mipro
 ```
@@ -21,7 +21,7 @@ python -m evals.optimize --optimizer mipro
 
 ## Eval grid
 
-`evals/cases.yaml` — 3 papers × 10 levels = 30 cases. See README.md to add papers.
+`evals/cases.yaml` — 5 papers × 10 levels = 50 cases. See README.md to add papers.
 
 ## Graders
 
@@ -33,8 +33,8 @@ Uses temperature=0.0. Uses DIFFERENT model from generator to avoid self-fingerpr
 parse_ok (mmdc), node_count ≤10, no subgraph, no `&`/`/` outside quotes, arrow labels ≤3 words.
 `mmdc` not installed → parse check skipped (treated as pass).
 
-**rag_metrics.py** — Ragas wrapper (faithfulness, answer_relevancy, context_precision).
-NOT wired into main eval loop — standalone use only.
+**rag_types.py** — custom RAG evaluation (faithfulness, answer_relevancy, context_precision)
+with three retrieval strategies (naive, LLM-query, fusion). Requires Docker. Run via `rag-eval` command.
 
 ## DSPy optimization (optimize.py)
 

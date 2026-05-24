@@ -5,13 +5,13 @@ Adaptive Research Paper Explainer. Streamlit → local RAG → n8n webhook → L
 ## Two-phase pipeline
 
 Phase 1 `analyze_paper(pdf)` (local, no n8n):
-1. Extract text (PyMuPDF), chunk sliding-window, embed (all-MiniLM-L6-v2), store in Weaviate as source="main"
-2. Extract references (max 3), fetch via Semantic Scholar, embed+store as source="reference"
-3. Retrieve top-5 main + top-2 reference chunks → Azure OpenAI → topic bullet list
+1. Extract text (PyMuPDF), chunk sliding-window (300 words, 50-word overlap), embed (all-MiniLM-L6-v2), store in Weaviate as source="main"
+2. Extract references (user-selectable count), fetch via Semantic Scholar, embed+store as source="reference"
+3. Retrieve top-4 main + top-1 reference chunks → Azure OpenAI → topic bullet list
 
 Phase 2 `explain_paper(level, topics)` (calls n8n):
 1. Ping n8n health check — abort if unreachable
-2. Retrieve top-5+2 chunks, POST to N8N_URL with {stage, paper_excerpt, level, topics}, timeout=300s
+2. Retrieve top-4 main + top-1 reference chunks, POST to N8N_URL with {stage, paper_excerpt, level, topics}, timeout=300s
 3. n8n: PlannerAgent → parallel(ExplainerAgent + MermaidAgent + QuizAgent + ImagePromptAgent→CallClusterAPI) → {text_explanation, mermaid_code, quiz, image_prompt, analogy_image, planner_brief}
 4. Save to SQLite (all fields), display in Streamlit
 
@@ -24,7 +24,7 @@ Phase 2 `explain_paper(level, topics)` (calls n8n):
 | Vector DB | Weaviate, collection `PaperChunk`, fields: text, source, vector |
 | Orchestration | n8n external via webhook — never called directly except via `api_client.py` |
 | Embeddings | sentence-transformers all-MiniLM-L6-v2, loaded once at import |
-| Persistence | SQLite `arpx.db` at project root, table `Explanations` (cols: text_explanation, mermaid_code, image_prompt, analogy_image, planner_brief, quiz_json) |
+| Persistence | SQLite `arpx.db` at project root, table `Explanations` (cols: text_explanation, mermaid_code, image_prompt, analogy_image, planner_brief, quiz_json); table `Messages` for chat history |
 | TTS | Piper (CPU, runs in `app` container); voice model baked at `/opt/piper`; narrates the explanation |
 | PDF | PyMuPDF (fitz) |
 
@@ -87,7 +87,8 @@ Per session: `./image_service/start.sh [node]` → copy URL to n8n variable, `./
 
 ## Key invariants
 
-- Weaviate cleared on every `analyze_paper()` — single-paper-at-a-time design
-- RAG indexes both main paper AND up to 3 references; `source` field distinguishes at retrieval
+- Weaviate indexes per `chat_id` — each session's chunks are scoped and isolated at retrieval time
+- RAG indexes both main paper AND user-selected references; `source` field distinguishes at retrieval
+- Chat uses fusion retrieval (RRF with 3 sub-queries) for follow-up questions; explain/analyze use naive retrieval
 - prompts.yaml read by n8n at runtime from `/data/prompts.yaml` — edit and save, no reimport needed
 - Semantic Scholar: 3s min interval between requests enforced by global `LAST_REQUEST_TIME`

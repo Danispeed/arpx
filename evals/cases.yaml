@@ -1,4 +1,4 @@
-# Eval grid — 3 papers × 10 levels = 30 cases per agent.
+# Eval grid — 5 papers × 10 levels = 50 cases per agent.
 # Add expected_topics: the key concepts the explainer must address.
 
 papers:
