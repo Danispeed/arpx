@@ -22,28 +22,36 @@ ARPX is a multi-agent, Retrieval-Augmented Generation (RAG) system that acts as 
 ```mermaid
 graph TD
 User[User] --> UI["Streamlit App (port 8051)"]
-UI --> Analyze[LocalAnalysis]
-Analyze --> Parse[PDFExtraction]
-Parse --> Chunk[SlidingWindowChunking]
-Chunk --> Embed["Embedding (all-MiniLM-L6-v2)"]
-Embed --> WDB["Weaviate (VectorDB)"]
-Analyze --> Scholar["Semantic Scholar API"]
-Scholar --> WDB
-WDB --> Context[RetrievedChunks]
-Context --> Topics["Topics (Azure OpenAI)"]
+UI --> Analyze
+
+subgraph phase1["Phase 1 — Local Analysis"]
+  Analyze[LocalAnalysis] --> Parse[PDFExtraction]
+  Parse --> Chunk[SlidingWindowChunking]
+  Chunk --> Embed["Embedding (all-MiniLM-L6-v2)"]
+  Analyze --> Scholar["Semantic Scholar API"]
+  Embed --> WDB["Weaviate (VectorDB)"]
+  Scholar --> WDB
+  WDB --> Topics["Topics (Azure OpenAI)"]
+end
+
 Topics --> UI
 UI --> LevelSelect["User selects level + clicks Explain"]
-LevelSelect --> N8N["n8n Webhook"]
-N8N --> Planner[PlannerAgent]
-Planner --> Explain[ExplainerAgent]
-Planner --> Diagram[MermaidAgent]
-Planner --> Quiz[QuizAgent]
-Planner --> ImgPrompt[ImagePromptAgent]
-ImgPrompt --> GPU["GPU Cluster (FLUX.1 Schnell)"]
-Explain --> UI
-Diagram --> UI
-Quiz --> UI
-GPU --> UI
+LevelSelect --> Webhook["n8n Webhook"]
+
+subgraph phase2["Phase 2 — n8n Orchestration"]
+  Webhook --> Planner[PlannerAgent]
+  Planner --> Explain[ExplainerAgent]
+  Planner --> Diagram[MermaidAgent]
+  Planner --> Quiz[QuizAgent]
+  Planner --> ImgPrompt[ImagePromptAgent]
+  ImgPrompt --> GPU["GPU Cluster (FLUX.1 Schnell)"]
+  Explain --> Merge[MergeResults]
+  Diagram --> Merge
+  Quiz --> Merge
+  GPU --> Merge
+end
+
+Merge --> UI
 ```
 
 The system has four components:
