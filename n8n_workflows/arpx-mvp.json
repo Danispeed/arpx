@@ -307,7 +307,8 @@
           "id": "OlznxoofcjeRU7GT",
           "name": "Header Auth account"
         }
-      }
+      },
+      "onError": "continueRegularOutput"
     },
     {
       "parameters": {
@@ -342,7 +343,8 @@
           "id": "OlznxoofcjeRU7GT",
           "name": "Header Auth account"
         }
-      }
+      },
+      "onError": "continueRegularOutput"
     },
     {
       "parameters": {
@@ -619,7 +621,7 @@
     {
       "parameters": {
         "mode": "runOnceForAllItems",
-        "jsCode": "const brief = $input.first().json.planner_brief;\nconst ni = $('NormalizeInput').first().json;\nconst briefBlock = 'Coordination brief:\\n\\n' + brief + '\\n\\n';\nconst explainer_user_msg = briefBlock + ni.explainer_user_template\n  .replaceAll('{paper_excerpt}', ni.paper_excerpt)\n  .replaceAll('{topics}', ni.topics)\n  .replaceAll('{level}', ni.level);\nconst mermaid_user_msg = briefBlock + ni.mermaid_user_template\n  .replaceAll('{paper_excerpt}', ni.paper_excerpt)\n  .replaceAll('{topics}', ni.topics)\n  .replaceAll('{level}', ni.level);\nconst image_prompt_user_msg = ni.image_prompt_user_template\n  .replaceAll('{planner_brief}', brief)\n  .replaceAll('{paper_excerpt}', ni.paper_excerpt)\n  .replaceAll('{topics}', ni.topics)\n  .replaceAll('{level}', ni.level);\nconst quiz_user_msg = briefBlock + ni.quiz_user_template\n  .replaceAll('{paper_excerpt}', ni.paper_excerpt)\n  .replaceAll('{topics}', ni.topics)\n  .replaceAll('{level}', ni.level);\nreturn [{\n  json: {\n    planner_brief: brief,\n    explainer_system: ni.explainer_system,\n    explainer_user_msg,\n    mermaid_system: ni.mermaid_system,\n    mermaid_user_msg,\n    image_prompt_system: ni.image_prompt_system,\n    image_prompt_user_msg,\n    quiz_system: ni.quiz_system,\n    quiz_user_msg,\n  }\n}];"
+        "jsCode": "const brief = $input.first().json.planner_brief;\nconst ni = $('NormalizeInput').first().json;\nconst briefBlock = 'Coordination brief:\\n\\n' + brief + '\\n\\n';\nconst explainer_user_msg = briefBlock + ni.explainer_user_template\n  .replaceAll('{planner_brief}', brief)\n  .replaceAll('{paper_excerpt}', ni.paper_excerpt)\n  .replaceAll('{topics}', ni.topics)\n  .replaceAll('{level}', ni.level);\nconst mermaid_user_msg = briefBlock + ni.mermaid_user_template\n  .replaceAll('{paper_excerpt}', ni.paper_excerpt)\n  .replaceAll('{topics}', ni.topics)\n  .replaceAll('{level}', ni.level);\nconst image_prompt_user_msg = ni.image_prompt_user_template\n  .replaceAll('{planner_brief}', brief)\n  .replaceAll('{paper_excerpt}', ni.paper_excerpt)\n  .replaceAll('{topics}', ni.topics)\n  .replaceAll('{level}', ni.level);\nconst quiz_user_msg = briefBlock + ni.quiz_user_template\n  .replaceAll('{paper_excerpt}', ni.paper_excerpt)\n  .replaceAll('{topics}', ni.topics)\n  .replaceAll('{level}', ni.level);\nreturn [{\n  json: {\n    planner_brief: brief,\n    explainer_system: ni.explainer_system,\n    explainer_user_msg,\n    mermaid_system: ni.mermaid_system,\n    mermaid_user_msg,\n    image_prompt_system: ni.image_prompt_system,\n    image_prompt_user_msg,\n    quiz_system: ni.quiz_system.replaceAll('{level}', ni.level),\n    quiz_user_msg,\n  }\n}];"
       },
       "id": "f1a2b3c4-d5e6-7890-abcd-100000000003",
       "name": "InjectBrief",
@@ -792,7 +794,8 @@
           "id": "OlznxoofcjeRU7GT",
           "name": "Header Auth account"
         }
-      }
+      },
+      "onError": "continueRegularOutput"
     },
     {
       "parameters": {
