@@ -3,7 +3,6 @@ from rag.chunking import chunk_text_fixed, chunk_text_sentence, chunk_text_slidi
 from rag.embeddings import embed_chunks
 from rag.weaviate_db import create_schema, store_chunks, query_chunks
 from rag.semantic_scholar import fetch_paper_data
-from evals.chunking import chunking_experiment
 import requests
 import io
 

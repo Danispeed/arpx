@@ -2,8 +2,6 @@ from agents.retriever import index_papers
 from agents.analyzer import find_topics
 from api_client import call_orchestrator
 from rag.rag_types import retrieve_chunks_naive, retrieve_chunks_llm_query, retrieve_chunks_fusion
-from evals.rag_types import run_rag_evaluation
-from evals.retrieved_chunks import run_full_k_experiment
 
 def analyze_paper(paper, chat_id, num_references):    
     # Index paper (should only happen once)
