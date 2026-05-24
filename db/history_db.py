@@ -29,6 +29,10 @@ def init_db():
                        level INTEGER,
                        text_explanation TEXT,
                        mermaid_code TEXT,
+                       image_prompt TEXT,
+                       analogy_image TEXT,
+                       planner_brief TEXT,
+                       quiz_json TEXT,
                        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
                     )
                 """)
@@ -54,12 +58,6 @@ def init_db():
                        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
                    )
                    """)
-
-    for col in ("image_prompt", "analogy_image", "planner_brief", "quiz_json"):
-        try:
-            cursor.execute(f"ALTER TABLE Explanations ADD COLUMN {col} TEXT")
-        except sqlite3.OperationalError:
-            pass
 
     connection.commit()
     connection.close()
