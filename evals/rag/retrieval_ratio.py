@@ -1,4 +1,4 @@
-from evals.rag_types import rag_methods, compute_faithfulness, compute_answer_relevancy, compute_context_precision
+from evals.rag.rag_types import rag_methods, compute_faithfulness, compute_answer_relevancy, compute_context_precision
 import pandas as pd
 import matplotlib.pyplot as plt
 import os

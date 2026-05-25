@@ -31,7 +31,7 @@ from evals.config import (
     PROPOSER_MODEL,
 )
 from evals.dataset import load_eval_cases
-from evals.graders import rubric as rubric_grader
+from evals.chatbot.graders import rubric as rubric_grader
 
 
 # ── DSPy signatures ──────────────────────────────────────────────────────────

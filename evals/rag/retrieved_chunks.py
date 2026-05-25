@@ -1,6 +1,6 @@
 import time
 import pandas as pd
-from evals.rag_types import rag_methods, compute_faithfulness, compute_answer_relevancy, compute_context_precision
+from evals.rag.rag_types import rag_methods, compute_faithfulness, compute_answer_relevancy, compute_context_precision
 import matplotlib.pyplot as plt
 import os
 

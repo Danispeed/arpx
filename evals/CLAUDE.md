@@ -1,22 +1,36 @@
 # evals/
 
-Eval + DSPy prompt optimization. Runs WITHOUT Docker — bypasses n8n and Weaviate entirely.
-Reads PDFs directly with fitz; calls Azure OpenAI via SDK.
+Two eval suites under one entry point (`evals/run.py`):
+- **`evals/chatbot/`** — chatbot/explanation eval (LLM rubric + Mermaid grading + DSPy optimization). No Docker needed.
+- **`evals/rag/`** — RAG evaluation (faithfulness, retrieval k-sweep, chunking comparison). Requires Docker + Weaviate.
+
+Shared at top level: `config.py` (models, paths, keys), `dataset.py` (PDF loading), `cases.yaml`.
 
 ## Commands
 
+Chatbot eval (no Docker):
 ```bash
 python -m evals.run estimate              # dry-run: predict cost
-python -m evals.run evaluate             # score all cases, save to evals/reports/
-python -m evals.run check-baseline       # compare latest report to baseline.json
-python -m evals.optimize --levels 1,5,7 --budget 5
-python -m evals.optimize --optimizer mipro
+python -m evals.run evaluate              # score all cases, save to evals/reports/
+python -m evals.run check-baseline        # compare latest report to baseline.json
+python -m evals.run compare-models        # multi-model comparison
+python -m evals.chatbot.optimize --levels 1,5,7 --budget 5
+```
+
+RAG eval (Docker stack must be running):
+```bash
+python -m evals.run index                 # index papers into Weaviate
+python -m evals.run rag-eval              # faithfulness / relevancy / precision
+python -m evals.run k-sweep               # retrieval k sweep
+python -m evals.run reference-ratio       # main vs reference chunk ratio
+python -m evals.run chunking              # chunking strategy comparison
 ```
 
 ## What changes when you run
 
 - `evaluate`: saves JSON report to `evals/reports/`
 - `optimize`: rewrites `n8n_workflows/prompts.yaml` with better system prompts
+- RAG commands: write CSVs to `evals/` and PDFs to `evals/figures/`
 - Nothing else: no weights, no DB changes
 
 ## Eval grid
@@ -25,18 +39,18 @@ python -m evals.optimize --optimizer mipro
 
 ## Graders
 
-**rubric.py** — LLM-as-judge using `ARPX_JUDGE_MODEL` (default: DeepSeek-V3.2).
+**`chatbot/graders/rubric.py`** — LLM-as-judge using `ARPX_JUDGE_MODEL` (default: DeepSeek-V3.2).
 4 dimensions × 0-5: faithfulness, level_match, coverage, clarity. Normalized score = total/20.
 Uses temperature=0.0. Uses DIFFERENT model from generator to avoid self-fingerprint bias.
 
-**mermaid.py** — deterministic, no LLM. 5 binary rules:
+**`chatbot/graders/mermaid.py`** — deterministic, no LLM. 5 binary rules:
 parse_ok (mmdc), node_count ≤10, no subgraph, no `&`/`/` outside quotes, arrow labels ≤3 words.
 `mmdc` not installed → parse check skipped (treated as pass).
 
-**rag_types.py** — custom RAG evaluation (faithfulness, answer_relevancy, context_precision)
+**`rag/rag_types.py`** — custom RAG evaluation (faithfulness, answer_relevancy, context_precision)
 with three retrieval strategies (naive, LLM-query, fusion). Requires Docker. Run via `rag-eval` command.
 
-## DSPy optimization (optimize.py)
+## DSPy optimization (chatbot/optimize.py)
 
 COPRO (default): breadth=budget, depth=2. Seeds from existing per-level system prompt.
 Metric = rubric.grade(normalized). Writes winning instruction string back to `prompts.yaml`.

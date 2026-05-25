@@ -28,7 +28,7 @@ from openai import AzureOpenAI
 from tenacity import retry, stop_after_attempt, wait_exponential
 
 from evals.config import AZURE_API_VERSION, AZURE_ENDPOINT, AZURE_KEY, CACHE_DIR, REPORTS_DIR
-from evals.graders.rubric import _JUDGE_SYSTEM, _JUDGE_USER_TEMPLATE, _LEVEL_CRITERIA
+from evals.chatbot.graders.rubric import _JUDGE_SYSTEM, _JUDGE_USER_TEMPLATE, _LEVEL_CRITERIA
 
 _AGREE_CACHE = os.path.join(CACHE_DIR, "judge_agreement")
 
