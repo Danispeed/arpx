@@ -8,7 +8,6 @@ def run_k_experiment(chat_id, case, k_values=[2, 4, 6, 8, 10], runs=5):
     results = []
     
     for run in range(runs):
-        
         for rag_name, retrieve_func in rag_methods.items():
             for k in k_values:
                 for question in case["questions"]:
@@ -27,7 +26,6 @@ def run_k_experiment(chat_id, case, k_values=[2, 4, 6, 8, 10], runs=5):
                     
                     # Skip failed backend calls
                     if answer.startswith("Error"):
-                        print(f"[skip] {rag_name} | {question} -> {answer}")
                         continue
                     
                     # Compute metrics
@@ -156,11 +154,9 @@ def run_full_k_experiment(cases):
     
     for case in cases:
         chat_id = case["chat_id"]
-        print("Doing rag type experiment on paper:", case["name"])
         df = run_k_experiment(chat_id, case)
         df["paper"] = case["name"]
-        
-        
+
         all_results.append(df)
         
     final_df = pd.concat(all_results, ignore_index=True)

@@ -52,7 +52,7 @@ def find_num_references(pdf_document):
         if is_likely_paper(reference):
             filtered.append(reference)
     
-    return len(references)
+    return len(filtered)
 
 # Extract references from Reference section from paper text
 def extract_references(text, num_references):
@@ -106,7 +106,7 @@ def extract_references(text, num_references):
             filtered.append(reference)
             
     
-    # Limit the number of references (can also be changed later, look at how 10 works first)
+    # Limit the number of references returned
     return filtered[:num_references]
 
 def split_into_sentences(text):
@@ -133,5 +133,6 @@ def is_likely_paper(reference: str) -> bool:
 
 def clean_reference(ref):
     ref = re.sub(r"\[.*?\]", "", ref)   # remove [1]
+    ref = re.sub(r"^\d+\.\s*", "", ref) # remove X. at start
     ref = re.sub(r"http\S+", "", ref)   # remove URLs
     return ref.strip()

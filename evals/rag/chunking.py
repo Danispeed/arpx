@@ -15,7 +15,6 @@ def chunking_experiment(cases, runs=5):
     results = []
     for case in cases:
         with open(case["paper_path"], "rb") as paper:
-            print("Doing chunking experiment on paper:", case["name"])
             text = extract_text_from_pdf(paper)
             
         for run in range(runs):

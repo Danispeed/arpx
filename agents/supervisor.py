@@ -7,13 +7,12 @@ def analyze_paper(paper, chat_id, num_references):
     # Index paper (should only happen once)
     index_papers(paper, chat_id, num_references)
     
-    # Probably need to be modified
     query = "What are the main topics of this research paper?"
     
     # Retrieve relevant chunks
     topic_chunks = retrieve_chunks_naive(query, chat_id, 4, 1)
     
-    # Send to the explainer agent the relevant chunks + query
+    # Send to the explainer agent (local) the relevant chunks + query
     topics = find_topics(
         [chunk["text"] for chunk in topic_chunks],
         query

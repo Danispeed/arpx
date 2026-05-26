@@ -36,7 +36,6 @@ def run_reference_ratio_experiment(chat_id, case):
                 
                 # Skip failed backend calls
                 if answer.startswith("Error"):
-                    print(f"[skip] {rag_name} | {question} -> {answer}")
                     continue
                 
                 faithfulness = compute_faithfulness(answer, chunks)
@@ -106,7 +105,6 @@ def run_full_reference_ratio_experiment(cases):
     
     for case in cases:
         chat_id = case["chat_id"]
-        print("Doing ratio experiment on paper:", case["name"])
         df = run_reference_ratio_experiment(chat_id, case)
         df["paper"] = case["name"]
         all_results.append(df)

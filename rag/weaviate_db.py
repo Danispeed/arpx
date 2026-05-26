@@ -14,11 +14,10 @@ client = weaviate.connect_to_custom(
 )
 
 # class = name of the table
-# vectorizer = None since we are creating the embeddings, this could be changed
+# vectorizer = None since we are creating the embeddings
 # Weaviate stores data objects
 # Each data objebt in our database will be PaperChink objects, whic will look like:
 # (attribute-1, attribute-2, ..., attribute-n),  vector
-# So currently ours will look like: chunk, vector
 def create_schema():
     # Check if collection exists
     existing_collections = client.collections.list_all()
@@ -57,7 +56,7 @@ def store_chunks(chunks, embeddings, source, chat_id):
     # e.g., chunks[0] belongs to embeddings[0]
     collection = client.collections.get("PaperChunk")   # Store this in the "PaperChunk" table
     for chunk, vector in zip(chunks, embeddings):
-        # Create a data object corresponding to the schema created (atm only contains one attribute "text")
+        # Create a data object corresponding to the schema created
         collection.data.insert(
             properties={
                 "text": chunk,
@@ -67,15 +66,13 @@ def store_chunks(chunks, embeddings, source, chat_id):
             vector=vector.tolist() # Convert from numpy array to a plain list
         )
 
-# This function
-# will now retrieve the top 5 chunks based on the query, this parameter can be changed
 def query_chunks(query_embedding, chat_id, top_k_main, top_k_ref):
     collection = client.collections.get("PaperChunk")
     
     # Chunks from the main paper (the paper that was uploaded by the user)
     main_results = collection.query.near_vector(
         near_vector=query_embedding.tolist(),   # Similarity search
-        limit=top_k_main,     # limit results, only return top_k most relevant chunks
+        limit=top_k_main,     # limit results, only return top_k_main most relevant chunks
         filters = (
                     wvc.query.Filter.by_property("source").equal("main") &
                     wvc.query.Filter.by_property("chat_id").equal(chat_id)
@@ -127,7 +124,7 @@ def is_indexed(chat_id):
 
 # Clear database
 def clear():
-    # Cleares eveything in the database
+    # Cleares eveything in the table PaperChunk
     client.collections.delete("PaperChunk")
 
 

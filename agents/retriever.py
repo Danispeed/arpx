@@ -7,7 +7,7 @@ import requests
 import io
 
 # Index both the main paper and the referenced papers
-def index_papers(paper, chat_id, num_refernces):
+def index_papers(paper, chat_id, num_references):
     # Begin with main paper
     # Extract text
     text = extract_text_from_pdf(paper)  
@@ -25,7 +25,7 @@ def index_papers(paper, chat_id, num_refernces):
     store_chunks(chunks, embeddings, "main", chat_id)
     
     # Referenced papers
-    references = extract_references(text, num_refernces)
+    references = extract_references(text, num_references)
     
     for reference in references:
         data = fetch_paper_data(reference)
@@ -37,8 +37,6 @@ def index_papers(paper, chat_id, num_refernces):
         # First, try to use the pdf
         if data["pdf_url"]:
             try:
-                print("Trying PDF:", data["pdf_url"])
-                
                 # Download the PDF file (as bytes)
                 # .content contain the binary data of the file
                 pdf_response = requests.get(data["pdf_url"], timeout=5)
@@ -50,8 +48,6 @@ def index_papers(paper, chat_id, num_refernces):
                 reference_embeddings = embed_chunks(reference_chunks)
                 
                 store_chunks(reference_chunks, reference_embeddings, "reference", chat_id)
-                
-                print(f"Stored {len(reference_chunks)} reference chunks (PDF)")
                 continue
             
             except Exception as e:
@@ -59,7 +55,6 @@ def index_papers(paper, chat_id, num_refernces):
         
         # Fallback: abstract
         if data["abstract"]:
-            print("Using abstract")
             abstract_chunks = chunk_text_sliding(data["abstract"], 300, 50)
             abstract_embeddings = embed_chunks(abstract_chunks)
             
