@@ -107,6 +107,9 @@ def generate_multiple_queries(user_query, n):
     Context:
     - The user is asking a follow-up question about a research paper.
     
+    User question:
+    {user_query}
+    
     Your task is to generate {n} different search queries that:
     - capture different aspects of the question
     - use different wording or focus

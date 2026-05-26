@@ -201,7 +201,7 @@ if st.session_state.analyzed:
     st.session_state.level = level
     
     if st.button("Explain Paper"):
-        with st.spinner("Generating explanation (this may take up to 2 minutes for large papers)..."):
+        with st.spinner("Generating explanation..."):
             result, explain_chunks = explain_paper(level, st.session_state.topics, st.session_state.chat_id)
 
             text = result.get("text_explanation", "")

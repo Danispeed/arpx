@@ -2,7 +2,6 @@ from openai import AzureOpenAI
 from rag.utils import split_into_sentences
 import os
 from dotenv import load_dotenv
-import ast
 import json
 
 os.environ["TOKENIZERS_PARALLELISM"] = "false"
@@ -17,8 +16,7 @@ client = AzureOpenAI(
     api_version=_AZURE_API_VERSION,
     azure_endpoint=_AZURE_ENDPOINT or None,
 )
-# Currently using fixed size chunking stratey
-# Could change this later to sentence-based or sliding window
+
 def chunk_text_fixed(text, chunk_size):
     words = text.split()
     chunks = []
@@ -37,6 +35,7 @@ def chunk_text_sentence(text, chunk_size):
     sentences = split_into_sentences(text)
     chunks = []
     
+    # Chunk size = number of sentences in each chunk
     for i in range(0, len(sentences), chunk_size):
         chunk = " ".join(sentences[i:i + chunk_size])
         

@@ -15,7 +15,7 @@ def ensure_indexed(case):
             index_papers(
                 paper=paper,
                 chat_id=chat_id,
-                num_refernces=num_references
+                num_references=num_references
             )
 
     

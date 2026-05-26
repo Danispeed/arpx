@@ -345,7 +345,6 @@ def cmd_rag_eval(args):
     cases = _unique_cases(load_eval_cases())
     
     for case in cases:
-        print(f"\nRunning RAG eval for {case['name']}")
         ensure_indexed(case)
         
     run_rag_evaluation(cases)
@@ -354,32 +353,25 @@ def cmd_k_sweep(args):
     cases = _unique_cases(load_eval_cases())
     
     for case in cases:
-        print(f"\nRunning k-sweep for {case['name']}")
         ensure_indexed(case)
     
     run_full_k_experiment(cases)
-    print("\nDone.")
 
 def cmd_reference_ratio(args):
     cases = _unique_cases(load_eval_cases())
     
     for case in cases:
-        print(f"\nRunning reference-ratio eval for {case['name']}")
         ensure_indexed(case)
     
     run_full_reference_ratio_experiment(cases)
-    print("\nDone.")
 
 def cmd_chunking(args):
     cases = _unique_cases(load_eval_cases())
     
     for case in cases:
-        print(f"\nRunning chunking eval for {case['name']}")
         ensure_indexed(case)
         
     chunking_experiment(cases)
-    
-    print("\nDone.")
 
 def main() -> None:
     parser = argparse.ArgumentParser(description="ARPX eval runner")

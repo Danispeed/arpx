@@ -44,7 +44,6 @@ def set_up_rag_experiment(chat_id, case, runs=5):
                 
                 # Skip failed backend calls
                 if answer.startswith("Error"):
-                    print(f"[skip] {rag_name} | {question} -> {answer}")
                     continue
                 
                 results.append({
@@ -235,8 +234,6 @@ def run_rag_evaluation(cases):
     
     for case in cases:
         chat_id = case["chat_id"]
-        
-        print("Doing rag type experiment on paper:", case["name"])
         
         results = set_up_rag_experiment(chat_id, case)
         
