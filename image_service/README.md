@@ -55,8 +55,6 @@ HF_HOME=~/hf_cache python -c "from diffusers import FluxPipeline; FluxPipeline.f
 
 `pip install` downloads ~2 GB (PyTorch + CUDA). Can take long time due to DFS.
 
-FLUX.1 Schnell requires ~24 GB VRAM and uses CPU offload for text encoders. Only RTX 3090 nodes (c6-4, c6-8) have enough VRAM.
-
 ### Per session
 
 **1. Start the service on the cluster:**
@@ -109,25 +107,6 @@ Local port `8765` is fixed by the tunnel — the URL does not change between ses
 
 ---
 
-## Troubleshooting
-
-| Error | Cause | Fix |
-|-------|-------|-----|
-| `ENOTFOUND c6-4.ifi.uit.no` | n8n cannot resolve cluster hostname | Run `tunnel.sh` |
-| `ECONNREFUSED 192.168.65.254:8765` | Tunnel closed (host slept or idle timeout) | Re-run `tunnel.sh` |
-| `503 Model load failed` | GPU OOM or CUDA error | Check `server.log`, restart service |
-| `analogy_image` empty in response | Service unreachable — n8n continues without image | Fix tunnel, re-run explanation |
-
-Check whether the service is alive:
-
-```bash
-ssh dsc019@ificluster.ifi.uit.no
-ssh c6-4
-cat ~/arpx/image_service/server.pid && ps aux | grep uvicorn
-```
-
----
-
 ## API
 
 ### `GET /health`
@@ -150,6 +129,8 @@ Request:
 }
 ```
 
+`steps` is the number of denoising iterations (1–10). FLUX.1 Schnell is distilled for 4 steps — increasing beyond 4 rarely improves quality and linearly increases generation time.
+
 Response:
 ```json
 {"image": "<base64 PNG>", "prompt": "..."}
@@ -168,9 +149,9 @@ Response:
 
 ## GPU nodes
 
+FLUX.1 Schnell requires ~24 GB VRAM. Only RTX 3090 nodes are viable.
+
 | Node | GPU | VRAM |
 |------|-----|------|
 | c6-4 | RTX 3090 | 24 GB |
 | c6-8 | RTX 3090 | 24 GB |
-| c6-5 | RTX 2080 Ti | 11 GB |
-| c6-12 | RTX 2080 SUPER | 8 GB |

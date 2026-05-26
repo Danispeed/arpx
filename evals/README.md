@@ -5,6 +5,20 @@ Automated evaluation and DSPy-driven prompt optimization for ARPX's three agents
 plain-text system prompts in `n8n_workflows/prompts.yaml` and writes the best-scoring
 variants back into that file.
 
+## Layout
+
+```
+evals/
+├── chatbot/   ← LLM rubric + Mermaid grading + DSPy optimization (no Docker)
+├── rag/       ← RAG eval: faithfulness, k-sweep, chunking (Docker required)
+├── config.py, dataset.py, cases.yaml, run.py   ← shared
+└── papers/, cache/, reports/, figures/         ← data
+```
+
+All commands go through the single entry point `python -m evals.run <subcommand>`.
+The runner lazy-imports the RAG modules — chatbot commands work even when Weaviate
+is not running.
+
 ## Quickstart
 
 ```bash
@@ -17,17 +31,13 @@ source evals/.venv/bin/activate
 # 3. Predict cost before spending quota
 python -m evals.run estimate
 
-# 4. Generate purpose-built level 1 + 5 system prompts using gpt-5-chat
-python -m evals.prompt_design generate --write
-rm -rf evals/cache/generations/   # clear cache so new prompts take effect
-
-# 5. Run multi-model comparison (levels 1 and 5, 3 models)
+# 4. Run multi-model comparison (levels 1 and 5, 3 models)
 python -m evals.run compare-models --levels 1 5
 
-# 6. Visualize results
-python -m evals.visualize --csv "evals/reports/comparison_all_models_*.csv"
+# 5. Visualize results
+python -m evals.chatbot.visualize --csv "evals/reports/comparison_all_models_*.csv"
 
-# 7. (Optional) Score current prompts.yaml across all levels
+# 6. (Optional) Score current prompts.yaml across all levels
 python -m evals.run evaluate
 ```
 
@@ -103,19 +113,19 @@ evals/dataset.py          ← fitz (PyMuPDF) PDF extraction, excerpt cache
       └─── topics context (≤800 chars)
               │
               ▼
-evals/generate.py         ← direct Azure OpenAI calls, generation cache
+evals/chatbot/generate.py         ← direct Azure OpenAI calls, generation cache
       │
       ├─ generate_explanation(excerpt, topics, level)   → text
       └─ generate_mermaid(excerpt, topics, level)       → mermaid syntax
               │
               ▼
-evals/graders/
+evals/chatbot/graders/
   ├─ rubric.py            ← LLM-as-judge, 4 dims × 0-5, judge cache
   └─ mermaid.py           ← deterministic, 5 binary rules, no LLM needed
               │
               ▼
 evals/run.py              ← asyncio runner, regression gate, JSON/CSV report
-evals/optimize.py         ← DSPy COPRO per level, writes back to prompts.yaml
+evals/chatbot/optimize.py         ← DSPy COPRO per level, writes back to prompts.yaml
 ```
 
 The harness bypasses n8n and Weaviate entirely — it reads PDFs directly with fitz and
@@ -132,14 +142,18 @@ A *case* is one (paper, level) pair. The current grid:
 papers:
   - path: evals/papers/attention.pdf        # "Attention Is All You Need"
     expected_topics: [transformer, attention, self-attention, ...]
-  - path: evals/papers/pesto.pdf            # Pesto system paper
-    expected_topics: [pose-estimation, keypoints, heatmap, ...]
+  - path: evals/papers/pesto.pdf            # Pesto (BFT distributed database)
+    expected_topics: [byzantine-fault-tolerance, distributed-database, ...]
   - path: evals/papers/tensorflow.pdf       # TensorFlow system paper
     expected_topics: [tensorflow, dataflow-graph, tensor, ...]
+  - path: evals/papers/bert.pdf             # BERT
+    expected_topics: [bert, masked-language-modeling, ...]
+  - path: evals/papers/resnet.pdf           # ResNet
+    expected_topics: [residual-learning, skip-connection, ...]
 levels: [1, 2, 3, 4, 5, 6, 7, 8, 9, 10]
 ```
 
-3 papers × 10 levels = **30 cases** per run. 
+5 papers × 10 levels = **50 cases** per run. 
 
 To add a paper: drop the PDF into `evals/papers/`, add an entry to `cases.yaml`
 with its expected_topics, and re-run evaluate. The excerpt cache keyed on the
@@ -149,7 +163,7 @@ PDF hash means existing papers are not re-extracted.
 
 ## Graders explained
 
-### Mermaid grader (`evals/graders/mermaid.py`)
+### Mermaid grader (`evals/chatbot/graders/mermaid.py`)
 
 Fully deterministic — no LLM involved. Runs five binary rules:
 
@@ -164,7 +178,7 @@ Fully deterministic — no LLM involved. Runs five binary rules:
 Score = fraction of rules passed (0.0, 0.2, 0.4, 0.6, 0.8, or 1.0).
 If `mmdc` is not installed the parse check is skipped with a warning (score treats it as passed).
 
-### Rubric grader (`evals/graders/rubric.py`)
+### Rubric grader (`evals/chatbot/graders/rubric.py`)
 
 LLM-as-judge using **DeepSeek-V3.2** (a different model family from the generator
 `gpt-5-chat`, which prevents the judge from rewarding its own stylistic fingerprint).
@@ -183,14 +197,18 @@ Total = sum (0–20). Normalized score = total / 20 (0.0–1.0).
 Results are cached keyed on `(output_hash, level, judge_model)`, so re-running
 evaluate on unchanged prompts is essentially free.
 
-### RAG metrics (`evals/graders/rag_metrics.py`)
+### RAG metrics (`evals/rag/rag_types.py`)
 
-Optional Ragas wrapper (faithfulness, answer_relevancy, context_precision).
-Not currently wired into the main eval loop — available for standalone use.
+Custom RAG evaluation with three metrics (faithfulness, answer_relevancy, context_precision)
+and three retrieval strategies (naive, LLM-query rewrite, fusion/RRF). Requires Docker
+(Weaviate must be running). Not wired into the main prompt eval loop — run separately
+via `python -m evals.run rag-eval`.
 
 ---
 
 ## How to run
+
+The pipeline has two suites. The chatbot suite below runs without Docker. The RAG suite (`rag-eval`, `k-sweep`, `reference-ratio`, `chunking`) requires `docker compose up` first — see the RAG eval section near the bottom.
 
 ### `python -m evals.run estimate`
 
@@ -207,7 +225,7 @@ Eval estimate for 30 cases:
 
 ### `python -m evals.run evaluate`
 
-Scores all 30 cases against the current `prompts.yaml`. Saves:
+Scores all 50 cases against the current `prompts.yaml`. Saves:
 - `evals/reports/report_<timestamp>.json` — full per-case scores
 - Printed summary table + regression check against the most recent previous report
 
@@ -249,30 +267,13 @@ Output: `evals/reports/comparison_all_models_<timestamp>.csv`
 
 ---
 
-### `python -m evals.prompt_design generate [--write]`
-
-Uses `gpt-5-chat` (the strongest available UiT Azure deployment) to write purpose-built
-system prompts for levels 1 and 5. Prompts are anchored to the rubric dimensions so the
-model is explicitly asked to maximise faithfulness, level_match, coverage, and clarity.
-
-Without `--write`, prints the generated prompts as a dry run.
-With `--write`, updates `n8n_workflows/prompts.yaml` directly.
-
-```bash
-python -m evals.prompt_design generate           # dry run
-python -m evals.prompt_design generate --write   # write to prompts.yaml
-rm -rf evals/cache/generations/                  # clear cache after writing
-```
-
----
-
-### `python -m evals.visualize --csv <path> [--out <dir>]`
+### `python -m evals.chatbot.visualize --csv <path> [--out <dir>]`
 
 Generates three PNG charts from a comparison CSV and prints a summary table to stdout.
 Requires `matplotlib` and `pandas` (included in the eval venv).
 
 ```bash
-python -m evals.visualize --csv "evals/reports/comparison_all_models_*.csv" --out evals/figures/
+python -m evals.chatbot.visualize --csv "evals/reports/comparison_all_models_*.csv" --out evals/figures/
 ```
 
 Outputs:
@@ -294,7 +295,7 @@ python -m evals.run evaluate --model mistral-Large-3 --levels 1 5
 
 ---
 
-### `python -m evals.optimize [--levels N] [--budget N] [--optimizer copro|mipro]`
+### `python -m evals.chatbot.optimize [--levels N] [--budget N] [--optimizer copro|mipro]`
 
 Runs DSPy COPRO (default) or MIPROv2 per specified level. For each level:
 
@@ -310,17 +311,40 @@ Common invocations:
 
 ```bash
 # Optimize the three weakest levels from the baseline
-python -m evals.optimize --levels 1,5,7 --budget 5
+python -m evals.chatbot.optimize --levels 1,5,7 --budget 5
 
 # Full optimization pass, all levels
-python -m evals.optimize --budget 5
+python -m evals.chatbot.optimize --budget 5
 
 # Higher budget for more thorough search (more expensive)
-python -m evals.optimize --levels 5 --budget 10
+python -m evals.chatbot.optimize --levels 5 --budget 10
 
 # Use MIPROv2 instead of COPRO (experimental, requires more quota)
-python -m evals.optimize --levels 5 --budget 5 --optimizer mipro
+python -m evals.chatbot.optimize --levels 5 --budget 5 --optimizer mipro
 ```
+
+---
+
+## RAG evaluation (Docker required)
+
+Lives in `evals/rag/`. Each command requires the Docker stack to be running (`docker compose up`) so Weaviate is reachable. All RAG commands call `ensure_indexed()` first to populate Weaviate with the paper chunks.
+
+```bash
+python -m evals.run index             # index papers (run once per Weaviate session)
+python -m evals.run rag-eval          # faithfulness / answer_relevancy / context_precision
+python -m evals.run k-sweep           # retrieval k sweep — latency and quality vs k
+python -m evals.run reference-ratio   # main-paper vs reference chunk ratio experiment
+python -m evals.run chunking          # compare chunking strategies (fixed / sentence / sliding / llm)
+```
+
+Each command writes a CSV alongside `evals/` (e.g. `rag_evaluation.csv`) and PDF charts into `evals/figures/`.
+
+Modules:
+- `evals/rag/rag_types.py` — faithfulness/relevancy/precision metrics + three retrieval strategies (naive, llm-query rewrite, fusion-RRF)
+- `evals/rag/indexing.py` — idempotent Weaviate indexing keyed on case
+- `evals/rag/chunking.py` — strategy comparison
+- `evals/rag/retrieved_chunks.py` — k-sweep
+- `evals/rag/retrieval_ratio.py` — reference-ratio experiment
 
 ---
 
@@ -411,7 +435,7 @@ Mitigations built into the harness:
   Re-running `evaluate` on unchanged prompts hits the generation and judge caches
   and makes essentially zero API calls.
 
-**Order-of-magnitude call volumes** (cold cache, `--budget 5`, 30 cases):
+**Order-of-magnitude call volumes** (cold cache, `--budget 5`, 50 cases):
 
 | Step | Calls | Approx tokens |
 |---|---|---|
@@ -432,7 +456,7 @@ If a run hits persistent 429s, reduce concurrency first, then reduce `--budget`.
 3. Run `python -m evals.run evaluate` — the new paper is included automatically.
 
 **Add a new rubric dimension:**
-1. Add the dimension name and scoring prompt to `_JUDGE_USER_TEMPLATE` in `evals/graders/rubric.py`.
+1. Add the dimension name and scoring prompt to `_JUDGE_USER_TEMPLATE` in `evals/chatbot/graders/rubric.py`.
 2. Update the `result` dict construction to include the new key.
 3. Update the total (currently `/20`) to reflect the new maximum.
 4. Note: existing judge cache entries will not include the new dimension —
@@ -445,7 +469,7 @@ import dspy
 dspy.configure(lm=dspy.LM("ollama/llama3.1:8b", api_base="http://localhost:11434"))
 ```
 The harness, graders, and `prompts.yaml` are unchanged. Only the Azure SDK calls
-in `generate.py` would need to switch to the Ollama endpoint — the eval logic is
+in `chatbot/generate.py` would need to switch to the Ollama endpoint — the eval logic is
 model-agnostic.
 
 **Raise the optimization budget:**

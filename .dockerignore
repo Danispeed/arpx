@@ -1,0 +1,13 @@
+.env
+arpx.db
+.venv/
+evals/.venv/
+evals/cache/
+evals/reports/
+evals/papers/*.pdf
+__pycache__/
+*.pyc
+.git/
+.cursor/
+docs/
+scripts/

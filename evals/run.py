@@ -21,15 +21,9 @@ from pathlib import Path
 
 from evals.config import CONCURRENCY, GENERATOR_MODEL, REPORTS_DIR
 from evals.dataset import load_eval_cases
-from evals.generate import generate_explanation, generate_mermaid
-from evals.graders import mermaid as mermaid_grader
-from evals.graders import rubric as rubric_grader
-from evals.indexing import ensure_indexed
-from evals.rag_types import run_rag_evaluation
-from evals.retrieved_chunks import run_full_k_experiment
-from evals.retrieval_ratio import run_full_reference_ratio_experiment
-from evals.chunking import chunking_experiment
-from rag.weaviate_db import create_schema
+from evals.chatbot.generate import generate_explanation, generate_mermaid
+from evals.chatbot.graders import mermaid as mermaid_grader
+from evals.chatbot.graders import rubric as rubric_grader
 
 _REGRESSION_THRESHOLD = 0.2
 _COMPARISON_MODELS = [
@@ -333,44 +327,45 @@ def cmd_check_baseline(args) -> None:
         sys.exit(2)
 
 def cmd_index(args) -> None:
+    from rag.weaviate_db import create_schema
+    from evals.rag.indexing import ensure_indexed
     create_schema()
     cases = _unique_cases(load_eval_cases())
-    
     for case in cases:
         print(f"\nChecking if {case['name']} is indexed")
         ensure_indexed(case)
     print("\nDone.")
 
 def cmd_rag_eval(args):
+    from evals.rag.indexing import ensure_indexed
+    from evals.rag.rag_types import run_rag_evaluation
     cases = _unique_cases(load_eval_cases())
-    
     for case in cases:
         ensure_indexed(case)
-        
     run_rag_evaluation(cases)
 
 def cmd_k_sweep(args):
+    from evals.rag.indexing import ensure_indexed
+    from evals.rag.retrieved_chunks import run_full_k_experiment
     cases = _unique_cases(load_eval_cases())
-    
     for case in cases:
         ensure_indexed(case)
-    
     run_full_k_experiment(cases)
 
 def cmd_reference_ratio(args):
+    from evals.rag.indexing import ensure_indexed
+    from evals.rag.retrieval_ratio import run_full_reference_ratio_experiment
     cases = _unique_cases(load_eval_cases())
-    
     for case in cases:
         ensure_indexed(case)
-    
     run_full_reference_ratio_experiment(cases)
 
 def cmd_chunking(args):
+    from evals.rag.indexing import ensure_indexed
+    from evals.rag.chunking import chunking_experiment
     cases = _unique_cases(load_eval_cases())
-    
     for case in cases:
         ensure_indexed(case)
-        
     chunking_experiment(cases)
 
 def main() -> None:

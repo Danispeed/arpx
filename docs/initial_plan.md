@@ -1,5 +1,7 @@
 # Project Blueprint: Adaptive Research Paper Explainer (ARPX)
 
+> **OUTDATED — Original April 2026 blueprint. Mentions local Stable Diffusion, Ollama, and LoRA which were never implemented. See [`README.md`](../README.md) for current architecture.**
+
 ## 1. The Vision
 
 We are building a multi-agent, Retrieval-Augmented Generation (RAG) system that acts as a flexible, adaptive tutor for academic papers across any discipline.
