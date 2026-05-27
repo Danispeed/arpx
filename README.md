@@ -123,23 +123,25 @@ The system has four components:
 ### Phase 1: Analyze (local, no n8n)
 
 1. User uploads a PDF. Text is extracted with PyMuPDF.
-2. Text is chunked using a sliding window (300 words, 50-word overlap).
+2. Text is chunked.
 3. Chunks are embedded with `all-MiniLM-L6-v2` and stored in Weaviate as `source="main"`.
 4. References are extracted from the bibliography, fetched via Semantic Scholar, and indexed as `source="reference"`.
-5. Top-4 main + top-1 reference chunks are retrieved and sent to Azure OpenAI to extract topic bullets.
+5. Top-k main + top-m reference chunks are retrieved and sent to Azure OpenAI to extract topics.
+6. Topics displayed to user
 
 ### Phase 2: Explain (calls n8n)
 
-1. Health check (ping) to n8n — abort if unreachable.
-2. Top-4+1 chunks are retrieved and POSTed to n8n.
-3. n8n runs: **PlannerAgent** → (**ExplainerAgent** + **MermaidAgent** + **QuizAgent** + **ImagePromptAgent** → **CallClusterAPI**) in parallel → merge results.
-4. Results are saved to SQLite and displayed in Streamlit.
+1. User selects knowledge level based on returned topics.
+2. Health check (ping) to n8n — abort if unreachable.
+3. Top-k+m chunks are retrieved and (+ selected knowledge level) sent  to n8n.
+4. n8n runs: **PlannerAgent** → (**ExplainerAgent** + **MermaidAgent** + **QuizAgent** + **ImagePromptAgent** → **CallClusterAPI**) in parallel → merge results.
+5. Results are saved to SQLite and displayed in Streamlit.
 
 ### Phase 3: Chat (calls n8n)
 
 1. User types a follow-up question.
-2. Three reformulations of the question are sent to Weaviate; results are merged with Reciprocal Rank Fusion (RRF) for better recall than a single query.
-3. Chunks + conversation history are POSTed to n8n's chat stage.
+2. The selected RAG retrieval strategy selects the top-k+m chunks.
+3. Chunks + level + conversation history are POSTed to n8n's chat stage.
 4. Response is displayed and persisted.
 
 ## Evaluation
