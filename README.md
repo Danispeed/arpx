@@ -6,7 +6,7 @@ ARPX is a multi-agent, Retrieval-Augmented Generation (RAG) system that acts as 
 
 ## Features
 
-- **PDF upload and analysis** — extract text, chunk with sliding window, embed, and store in Weaviate
+- **PDF upload and analysis** — extract text, chunk, embed, and store in Weaviate
 - **Reference indexing** — fetch cited papers via Semantic Scholar and index them alongside the main paper
 - **Adaptive explanations** — 10 distinct knowledge levels with per-level system prompts
 - **Planner-coordinated agents** — a PlannerAgent generates a coordination brief shared by all downstream agents for thematic cohesion
