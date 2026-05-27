@@ -113,6 +113,10 @@ The system has four components:
 | `AZURE_OPENAI_ENDPOINT` | Base URL of the Azure OpenAI resource |
 | `AZURE_OPENAI_DEPLOYMENT` | Deployment name (e.g. `gpt-5-chat`) |
 | `AZURE_OPENAI_API_VERSION` | Optional; defaults to `2024-10-21` |
+| `SEMANTIC_SCHOLAR_API_KEY` | API key for Semantic Scholar API |
+
+
+
 
 ## How it works
 
