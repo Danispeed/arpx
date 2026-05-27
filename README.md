@@ -14,7 +14,7 @@ ARPX is a multi-agent, Retrieval-Augmented Generation (RAG) system that acts as 
 - **Visual analogy images** — FLUX.1 Schnell on GPU cluster generates a conceptual metaphor image
 - **Comprehension quiz** — multiple-choice quiz calibrated to the reader's level
 - **Text-to-speech** — Piper CPU-based narration of the explanation
-- **Follow-up chat** — RAG-powered conversation with Reciprocal Rank Fusion retrieval
+- **Follow-up chat** — RAG-powered conversation
 - **Explanation history** — SQLite persistence with full session restore
 
 ## System architecture
