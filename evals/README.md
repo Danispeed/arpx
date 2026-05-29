@@ -337,7 +337,7 @@ python -m evals.run reference-ratio   # main-paper vs reference chunk ratio expe
 python -m evals.run chunking          # compare chunking strategies (fixed / sentence / sliding / llm)
 ```
 
-Each command writes a CSV alongside `evals/` (e.g. `rag_evaluation.csv`) and PDF charts into `evals/figures/`.
+Each command writes the results into `evals/figures/`.
 
 Modules:
 - `evals/rag/rag_types.py` — faithfulness/relevancy/precision metrics + three retrieval strategies (naive, llm-query rewrite, fusion-RRF)
