@@ -162,3 +162,29 @@ npx --yes -p @mermaid-js/mermaid-cli mmdc \
 ```
 
 All API calls are cached under `evals/cache/` and re-running the same prompts costs essentially zero.
+
+## Additional Retrieval Experiments
+
+Several retrieval-focused experiments were conducted as part of the RAG subsystem evaluation. Detailed methodology, figures, and discussion are included in the report.
+
+### Experiments
+
+| Experiment | Description | Results |
+|------------|-------------|----------|
+| RAG Strategy Comparison | Naive retrieval vs query rewriting vs reciprocal rank fusion | See report Section 4.A.2 and corresponding figures |
+| Retrieval-k Sweep | Effect of varying the number of retrieved chunks | See report Section 4.A.3 and corresponding figures |
+| Reference Ratio Evaluation | Effect of main-paper vs reference-paper retrieval balance | See report Section 4.A.4 and corresponding figures |
+| Chunking Evaluation | Comparison of chunking strategies and chunk sizes | See report Section 4.A.1 and corresponding figures |
+
+Results and figures for all retrieval experiments can be found in `evals/figures/`
+
+### Reproducing the experiments
+
+```bash
+python -m evals.run rag-eval
+python -m evals.run k-sweep
+python -m evals.run reference-ratio
+python -m evals.run chunking
+```
+
+
