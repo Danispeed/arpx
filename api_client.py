@@ -1,7 +1,7 @@
 import requests
 import os
 
-N8N_url = os.getenv("N8N_URL")
+N8N_url = os.getenv("N8N_URL", "http://localhost:5678/webhook/arpx/orchestrate")
 
 def call_orchestrator(stage, paper_excerpt, level, topics, query, history):
     payload = {"stage": stage}
