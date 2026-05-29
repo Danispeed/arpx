@@ -21,7 +21,7 @@ Phase 2 `explain_paper(level, topics)` (calls n8n):
 |---|---|
 | Frontend | Streamlit, port 8051 |
 | LLM | Azure OpenAI — topic extraction + n8n explanation |
-| Vector DB | Weaviate, collection `PaperChunk`, fields: text, source, vector |
+| Vector DB | Weaviate, collection `PaperChunk`, fields: text, source, chat_id, vector |
 | Orchestration | n8n external via webhook — never called directly except via `api_client.py` |
 | Embeddings | sentence-transformers all-MiniLM-L6-v2, loaded once at import |
 | Persistence | SQLite `arpx.db` at project root, table `Explanations` (cols: text_explanation, mermaid_code, image_prompt, analogy_image, planner_brief, quiz_json); table `Messages` for chat history |
