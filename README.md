@@ -19,39 +19,144 @@ ARPX is a multi-agent, Retrieval-Augmented Generation (RAG) system that acts as 
 
 ## System architecture
 
+# Phase 1: Topic Extraction (Indexing)
 ```mermaid
 graph TD
-User[User] --> UI["Streamlit App (port 8051)"]
-UI --> Analyze
 
-subgraph phase1["Phase 1 — Local Analysis"]
-  Analyze[LocalAnalysis] --> Parse[PDFExtraction]
-  Parse --> Chunk[SlidingWindowChunking]
-  Chunk --> Embed["Embedding (all-MiniLM-L6-v2)"]
-  Analyze --> Scholar["Semantic Scholar API"]
-  Embed --> WDB["Weaviate (VectorDB)"]
-  Scholar --> WDB
-  WDB --> Topics["Topics (Azure OpenAI)"]
+User[User] --> UI["Streamlit App"]
+
+subgraph Local["Local Retrieval Pipeline"]
+
+    Paper["Uploaded Paper"]
+    Scholar["Semantic Scholar API"]
+    Refs["Referenced Papers"]
+
+    Paper --> Extract1["PDF Extraction"]
+    Scholar --> Refs
+    Refs --> Extract1
+
+    Extract1 --> Chunk["Chunking"]
+    Chunk --> Embed["Embedding<br/>(all-MiniLM-L6-v2)"]
+    Embed --> WDB["Weaviate"]
+
+    Query["What are the main topics of this research paper?"]
+    Query --> QueryEmbed["Embedding<br/>(all-MiniLM-L6-v2)"]
+    QueryEmbed --> WDB
+    WDB --> Topics["Topics<br/>(Azure OpenAI)"]
+
 end
 
+UI --> Paper
 Topics --> UI
-UI --> LevelSelect["User selects level + clicks Explain"]
-LevelSelect --> Webhook["n8n Webhook"]
+```
+# Phase 2: Explanation Generation
 
-subgraph phase2["Phase 2 — n8n Orchestration"]
-  Webhook --> Planner[PlannerAgent]
-  Planner --> Explain[ExplainerAgent]
-  Planner --> Diagram[MermaidAgent]
-  Planner --> Quiz[QuizAgent]
-  Planner --> ImgPrompt[ImagePromptAgent]
-  ImgPrompt --> GPU["GPU Cluster (FLUX.1 Schnell)"]
-  Explain --> Merge[MergeResults]
-  Diagram --> Merge
-  Quiz --> Merge
-  GPU --> Merge
+```mermaid
+graph TD
+
+User[User] --> UI["Streamlit App"]
+
+subgraph Retrieval["Local Retrieval Pipeline"]
+
+    Level["Selected Level"]
+    Query["Explain the main ideas of this research paper"]
+
+    Level --> Query
+    Query --> QueryEmbed["Embedding<br/>(all-MiniLM-L6-v2)"]
+
+    QueryEmbed --> WDB["Weaviate"]
+    WDB --> Context["Retrieved Context"]
+
 end
+
+subgraph N8N["n8n Orchestration Pipeline"]
+
+    Webhook["n8n Webhook"]
+
+    Planner["Planner Agent"]
+
+    Explainer["Explainer Agent"]
+    Mermaid["Mermaid Agent"]
+    Quiz["Quiz Agent"]
+    ImgPrompt["Image Prompt Agent"]
+
+    GPU["GPU Cluster<br/>(FLUX.1 Schnell)"]
+
+    Merge["Merge Results"]
+
+    Webhook --> Planner
+
+    Planner --> Explainer
+    Planner --> Mermaid
+    Planner --> Quiz
+    Planner --> ImgPrompt
+
+    ImgPrompt --> GPU
+
+    Explainer --> Merge
+    Mermaid --> Merge
+    Quiz --> Merge
+    GPU --> Merge
+
+end
+
+UI --> Level
+
+Context --> Webhook
+Topics["Topics"] --> Webhook
+Level --> Webhook
 
 Merge --> UI
+```
+
+# Phase 3: Follow-up Question Answering
+```mermaid
+graph TD
+
+User[User] --> UI["Streamlit App"]
+
+Question["Follow-up Question"]
+History["Chat History"]
+Level["Selected Level"]
+
+subgraph Retrieval["Local Retrieval Pipeline"]
+
+    QueryEmbed["Embedding<br/>(all-MiniLM-L6-v2)"]
+
+    WDB["Weaviate"]
+
+    Context["Retrieved Context"]
+
+    QueryEmbed --> WDB
+    WDB --> Context
+
+end
+
+subgraph N8N["n8n Orchestration Pipeline"]
+
+    Webhook["n8n Webhook"]
+
+    Planner["Planner Agent"]
+
+    Chat["Chat Agent"]
+
+    Webhook --> Planner
+    Planner --> Chat
+
+end
+
+UI --> Question
+UI --> History
+UI --> Level
+
+Question --> QueryEmbed
+
+Context --> Webhook
+Question --> Webhook
+History --> Webhook
+Level --> Webhook
+
+Chat --> UI
 ```
 
 The system has four components:
