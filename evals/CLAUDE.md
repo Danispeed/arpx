@@ -30,7 +30,7 @@ python -m evals.run chunking              # chunking strategy comparison
 
 - `evaluate`: saves JSON report to `evals/reports/`
 - `optimize`: rewrites `n8n_workflows/prompts.yaml` with better system prompts
-- RAG commands: write CSVs to `evals/` and PDFs to `evals/figures/`
+- RAG commands: write results (figures (PDF) + CSV files to `evals/figures/`
 - Nothing else: no weights, no DB changes
 
 ## Eval grid
