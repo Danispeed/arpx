@@ -24,7 +24,7 @@ Phase 2 `explain_paper(level, topics)` (calls n8n):
 | Vector DB | Weaviate, collection `PaperChunk`, fields: text, source, chat_id, vector |
 | Orchestration | n8n external via webhook — never called directly except via `api_client.py` |
 | Embeddings | sentence-transformers all-MiniLM-L6-v2, loaded once at import |
-| Persistence | SQLite `arpx.db` at project root, table `Explanations`; table `Messages` for chat history; table `RetrievedChunks` to display chunks retrieved as context for LLM |
+| Persistence | SQLite `arpx.db` at project root, table `Explanations`; table `Messages` for chat history; table `RetrievedChunks` for displaying chunks retrieved as context for LLM |
 | TTS | Piper (CPU, runs in `app` container); voice model baked at `/opt/piper`; narrates the explanation |
 | PDF | PyMuPDF (fitz) |
 
