@@ -24,7 +24,7 @@ Phase 2 `explain_paper(level, topics)` (calls n8n):
 | Vector DB | Weaviate, collection `PaperChunk`, fields: text, source, chat_id, vector |
 | Orchestration | n8n external via webhook — never called directly except via `api_client.py` |
 | Embeddings | sentence-transformers all-MiniLM-L6-v2, loaded once at import |
-| Persistence | SQLite `arpx.db` at project root, table `Explanations` (cols: text_explanation, mermaid_code, image_prompt, analogy_image, planner_brief, quiz_json); table `Messages` for chat history |
+| Persistence | SQLite `arpx.db` at project root, table `Explanations`; table `Messages` for chat history; table `RetrievedChunks` to display chunks retrieved as context for LLM |
 | TTS | Piper (CPU, runs in `app` container); voice model baked at `/opt/piper`; narrates the explanation |
 | PDF | PyMuPDF (fitz) |
 
@@ -32,7 +32,7 @@ Phase 2 `explain_paper(level, topics)` (calls n8n):
 
 - `AZURE_OPENAI_KEY`, `AZURE_OPENAI_ENDPOINT`, `AZURE_OPENAI_DEPLOYMENT`
 - `AZURE_OPENAI_API_VERSION`
-- `N8N_URL` — docker-compose sets to `http://n8n:5678/webhook/arpx/orchestrate`
+- `SEMANTIC_SCHOLAR_API_KEY`
 
 Azure deployment names are course-specific (e.g. `gpt-5-chat`, `gpt-4.1-mini`). NOT standard OpenAI names.
 
